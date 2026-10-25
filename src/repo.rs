@@ -57,7 +57,7 @@ impl Repo {
     /// Load the repository rooted at `root`, read-only. Non-text and oversized
     /// files are skipped by the walker, not loaded here.
     pub fn load(root: &Path) -> Repo {
-        let ignore = match fs::read_to_string(root.join(".shipsafeignore")) {
+        let ignore = match fs::read_to_string(root.join(".hullcheckignore")) {
             Ok(text) => Ignore::parse(&text),
             Err(_) => Ignore::empty(),
         };

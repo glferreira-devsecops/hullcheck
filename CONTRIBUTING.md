@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. shipsafe stays small on purpose: read-only, zero network,
+Thanks for helping. hullcheck stays small on purpose: read-only, zero network,
 zero dependencies. Those three are hard constraints, not preferences.
 
 ## Add a rule

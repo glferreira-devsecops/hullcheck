@@ -280,7 +280,7 @@ fn client_secret(f: &TextFile) -> Vec<Finding> {
         }
 
         // Live or test Stripe secret key literal.
-        // shipsafe:ignore-next-line detector pattern
+        // hullcheck:ignore-next-line detector pattern
         if line.contains("sk_live_") || line.contains("sk_test_") {
             out.push(Finding::new(
                 RULE,
@@ -297,7 +297,7 @@ fn client_secret(f: &TextFile) -> Vec<Finding> {
         // A privileged Supabase client built in browser code: the real smell is
         // the privileged key passed into the client builder on one line, not a
         // bare mention in a comment or type.
-        // shipsafe:ignore-next-line detector pattern
+        // hullcheck:ignore-next-line detector pattern
         if client && has(line, "service_role") && has(line, "createClient") {
             out.push(Finding::new(
                 RULE,
@@ -326,7 +326,7 @@ fn client_secret(f: &TextFile) -> Vec<Finding> {
         }
 
         // Private key material.
-        // shipsafe:ignore-next-line detector pattern
+        // hullcheck:ignore-next-line detector pattern
         if line.contains("-----BEGIN") && has(line, "PRIVATE KEY") {
             out.push(Finding::new(
                 RULE,

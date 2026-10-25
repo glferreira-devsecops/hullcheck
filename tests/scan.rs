@@ -3,8 +3,8 @@
 
 use std::path::Path;
 
-use shipsafe::finding::{Finding, Lane};
-use shipsafe::review;
+use hullcheck::finding::{Finding, Lane};
+use hullcheck::review;
 
 fn review_fixture(name: &str) -> Vec<Finding> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -148,9 +148,9 @@ fn pull_request_target_is_validate() {
 }
 
 #[test]
-fn ignore_directive_and_shipsafeignore_silence_findings() {
-    // secret.ts has an inline `shipsafe:ignore`; vendor/ is path-ignored via
-    // the fixture's own .shipsafeignore. Both triggers must be suppressed.
+fn ignore_directive_and_hullcheckignore_silence_findings() {
+    // secret.ts has an inline `hullcheck:ignore`; vendor/ is path-ignored via
+    // the fixture's own .hullcheckignore. Both triggers must be suppressed.
     let f = review_fixture("ignore-demo");
     assert!(
         f.is_empty(),

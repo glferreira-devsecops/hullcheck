@@ -16,7 +16,7 @@ fn count(findings: &[Finding], lane: Lane) -> usize {
 pub fn render_text(findings: &[Finding], scanned_files: usize, root: &str) -> String {
     let mut s = String::new();
     s.push_str(&format!(
-        "shipsafe {VERSION}  ·  {scanned_files} files scanned  ·  {root}\n"
+        "hullcheck {VERSION}  ·  {scanned_files} files scanned  ·  {root}\n"
     ));
     s.push_str("read-only, no network. evidence is quoted by file and line.\n\n");
 
@@ -65,7 +65,7 @@ fn footer() -> String {
     );
     s.push_str("Hand the findings to your agent with this prompt:\n");
     s.push_str(
-        "  \"For each shipsafe finding, open the quoted file:line, confirm the issue is real,\n",
+        "  \"For each hullcheck finding, open the quoted file:line, confirm the issue is real,\n",
     );
     s.push_str(
         "   then propose the smallest safe fix and a test that fails before it. Do not change\n",
@@ -82,7 +82,7 @@ pub fn render_json(findings: &[Finding], scanned_files: usize) -> String {
     let mut s = String::new();
     s.push_str("{\n");
     s.push_str(&format!(
-        "  \"tool\": \"shipsafe\",\n  \"version\": \"{VERSION}\",\n"
+        "  \"tool\": \"hullcheck\",\n  \"version\": \"{VERSION}\",\n"
     ));
     s.push_str(&format!("  \"scannedFiles\": {scanned_files},\n"));
     s.push_str("  \"summary\": {\n");

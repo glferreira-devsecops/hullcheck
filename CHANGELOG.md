@@ -17,11 +17,11 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Four reporting lanes: Fix Now, Monitor, Validate Manually, Unverified. Every
   finding carries `file:line` and the quoted source line.
 - `--json` output, `--exit-zero`, and an exit code of `1` on any Fix Now finding.
-- `.shipsafeignore` (gitignore-style) and inline `shipsafe:ignore` /
-  `shipsafe:ignore-next-line` directives.
+- `.hullcheckignore` (gitignore-style) and inline `hullcheck:ignore` /
+  `hullcheck:ignore-next-line` directives.
 - Parallel scan across cores, with deterministic output.
 - Two portable review skills and a Claude plugin marketplace manifest.
 - Prebuilt-binary release pipeline and a self-verifying installer.
 
-[Unreleased]: https://github.com/glferreira-devsecops/shipsafe/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/glferreira-devsecops/shipsafe/releases/tag/v0.1.0
+[Unreleased]: https://github.com/glferreira-devsecops/hullcheck/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/glferreira-devsecops/hullcheck/releases/tag/v0.1.0

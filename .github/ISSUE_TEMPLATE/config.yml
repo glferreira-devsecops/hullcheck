@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security report
-    url: https://github.com/glferreira-devsecops/shipsafe/security/advisories/new
+    url: https://github.com/glferreira-devsecops/hullcheck/security/advisories/new
     about: Report a vulnerability privately. Do not open a public issue.
   - name: The full review kit
     url: https://www.rettecnologia.org/promptbook

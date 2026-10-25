@@ -1,5 +1,5 @@
-//! Path ignores, read from a `.shipsafeignore` file at the repository root, plus
-//! the inline `shipsafe:ignore` directive handled by the scan runner.
+//! Path ignores, read from a `.hullcheckignore` file at the repository root, plus
+//! the inline `hullcheck:ignore` directive handled by the scan runner.
 //!
 //! Every real scanner needs a way to silence vendored, generated, or
 //! intentionally-insecure files (test fixtures, examples). The syntax is a small
@@ -20,7 +20,7 @@ struct Pattern {
 }
 
 impl Ignore {
-    /// Parse the contents of a `.shipsafeignore` file. An empty or missing file
+    /// Parse the contents of a `.hullcheckignore` file. An empty or missing file
     /// yields a set that ignores nothing.
     pub fn parse(text: &str) -> Ignore {
         let mut patterns = Vec::new();

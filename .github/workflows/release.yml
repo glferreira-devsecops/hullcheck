@@ -27,9 +27,9 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
       - name: Package
         run: |
-          bin="target/${{ matrix.target }}/release/shipsafe"
-          tar -C "$(dirname "$bin")" -czf "shipsafe-${{ matrix.target }}.tar.gz" shipsafe
-          shasum -a 256 "shipsafe-${{ matrix.target }}.tar.gz" > "shipsafe-${{ matrix.target }}.tar.gz.sha256"
+          bin="target/${{ matrix.target }}/release/hullcheck"
+          tar -C "$(dirname "$bin")" -czf "hullcheck-${{ matrix.target }}.tar.gz" hullcheck
+          shasum -a 256 "hullcheck-${{ matrix.target }}.tar.gz" > "hullcheck-${{ matrix.target }}.tar.gz.sha256"
       - name: Upload to release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -39,5 +39,5 @@ jobs:
           # "already exists" race so every target can upload into the same release.
           gh release create "$tag" --title "$tag" --generate-notes || true
           gh release upload "$tag" \
-            "shipsafe-${{ matrix.target }}.tar.gz" \
-            "shipsafe-${{ matrix.target }}.tar.gz.sha256" --clobber
+            "hullcheck-${{ matrix.target }}.tar.gz" \
+            "hullcheck-${{ matrix.target }}.tar.gz.sha256" --clobber

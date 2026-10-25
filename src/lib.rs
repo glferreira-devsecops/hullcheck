@@ -1,4 +1,4 @@
-//! shipsafe: a read-only, zero-network, zero-dependency security review for the
+//! hullcheck: a read-only, zero-network, zero-dependency security review for the
 //! SaaS you built with an AI coding agent.
 //!
 //! The library is the whole tool; the binary is a thin CLI over [`scan::scan`].

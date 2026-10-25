@@ -7,7 +7,7 @@ body:
     attributes:
       label: What happened
       description: What you ran, what you expected, and what you got.
-      placeholder: "shipsafe . reported X on file Y:Z, but the line does not ..."
+      placeholder: "hullcheck . reported X on file Y:Z, but the line does not ..."
     validations:
       required: true
   - type: textarea
@@ -22,7 +22,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `shipsafe --version`.
+      description: Output of `hullcheck --version`.
     validations:
       required: true
   - type: input

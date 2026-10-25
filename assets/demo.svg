@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 452" role="img" aria-label="shipsafe terminal output">
-  <title>shipsafe scan output</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 452" role="img" aria-label="hullcheck terminal output">
+  <title>hullcheck scan output</title>
   <defs>
     <style>
       .t { font-family: 'SF Mono','JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace; font-size: 14px; }
@@ -17,10 +17,10 @@
   <circle cx="22" cy="18" r="5" fill="#FF5F56"/>
   <circle cx="40" cy="18" r="5" fill="#FFBD2E"/>
   <circle cx="58" cy="18" r="5" fill="#27C93F"/>
-  <text x="380" y="22" text-anchor="middle" class="t dim">shipsafe</text>
+  <text x="380" y="22" text-anchor="middle" class="t dim">hullcheck</text>
   <g class="t" xml:space="preserve">
-    <text x="20" y="62"><tspan class="gr">$</tspan><tspan class="txt"> shipsafe</tspan></text>
-    <text x="20" y="84" class="txt">shipsafe 0.1.0  ·  412 files scanned  ·  .</text>
+    <text x="20" y="62"><tspan class="gr">$</tspan><tspan class="txt"> hullcheck</tspan></text>
+    <text x="20" y="84" class="txt">hullcheck 0.1.0  ·  412 files scanned  ·  .</text>
     <text x="20" y="104" class="dim">read-only, no network. evidence is quoted by file and line.</text>
     <text x="20" y="134"><tspan class="am">Fix Now 2</tspan><tspan class="dim">   Monitor 1   Validate Manually 2   Unverified 0</tspan></text>
 

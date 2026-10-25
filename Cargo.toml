@@ -1,5 +1,5 @@
 [package]
-name = "shipsafe"
+name = "hullcheck"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.74"
@@ -7,7 +7,7 @@ description = "Read-only security review for the SaaS you built with an AI agent
 license = "MIT"
 authors = ["RET Tecnologia"]
 homepage = "https://www.rettecnologia.org/promptbook"
-repository = "https://github.com/glferreira-devsecops/shipsafe"
+repository = "https://github.com/glferreira-devsecops/hullcheck"
 keywords = ["security", "saas", "supabase", "stripe", "static-analysis"]
 categories = ["command-line-utilities", "development-tools"]
 readme = "README.md"

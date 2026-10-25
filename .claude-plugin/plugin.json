@@ -1,5 +1,5 @@
 {
-  "name": "shipsafe",
+  "name": "hullcheck",
   "description": "Portable security-review skills for the SaaS you built with an AI agent: tenant isolation and billing webhooks, evidence by file and line.",
   "version": "0.1.0",
   "author": { "name": "RET Tecnologia", "url": "https://www.rettecnologia.org" },

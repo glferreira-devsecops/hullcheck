@@ -1,10 +1,10 @@
-//! The shipsafe command-line interface.
+//! The hullcheck command-line interface.
 //!
 //! Usage:
-//!   shipsafe [PATH]        scan PATH (default: current directory)
-//!   shipsafe --json        emit machine-readable JSON instead of the report
-//!   shipsafe --exit-zero   always exit 0, even with Fix Now findings
-//!   shipsafe --help | --version
+//!   hullcheck [PATH]        scan PATH (default: current directory)
+//!   hullcheck --json        emit machine-readable JSON instead of the report
+//!   hullcheck --exit-zero   always exit 0, even with Fix Now findings
+//!   hullcheck --help | --version
 //!
 //! Exit code: 1 when any Fix Now finding is present (so CI can gate on it),
 //! 0 otherwise. `--exit-zero` forces 0.
@@ -12,15 +12,15 @@
 use std::path::Path;
 use std::process::ExitCode;
 
-use shipsafe::finding::Lane;
-use shipsafe::report;
-use shipsafe::review;
+use hullcheck::finding::Lane;
+use hullcheck::report;
+use hullcheck::review;
 
 const HELP: &str = "\
-shipsafe — read-only security review for the SaaS you built with an AI agent
+hullcheck — read-only security review for the SaaS you built with an AI agent
 
 USAGE:
-    shipsafe [PATH] [OPTIONS]
+    hullcheck [PATH] [OPTIONS]
 
 ARGS:
     PATH                 repository to scan (default: current directory)
@@ -31,7 +31,7 @@ OPTIONS:
     -h, --help           print this help
     -V, --version        print version
 
-shipsafe reads files only. It makes no network calls, writes nothing, and
+hullcheck reads files only. It makes no network calls, writes nothing, and
 never claims your app is secure. Full kit: https://www.rettecnologia.org/promptbook";
 
 struct Args {
@@ -83,11 +83,11 @@ fn main() -> ExitCode {
             ExitCode::SUCCESS
         }
         Parsed::Version => {
-            println!("shipsafe {}", report::VERSION);
+            println!("hullcheck {}", report::VERSION);
             ExitCode::SUCCESS
         }
         Parsed::Error(msg) => {
-            eprintln!("shipsafe: {msg}\n\n{HELP}");
+            eprintln!("hullcheck: {msg}\n\n{HELP}");
             ExitCode::from(2)
         }
         Parsed::Run(args) => run(&args),
@@ -97,7 +97,7 @@ fn main() -> ExitCode {
 fn run(args: &Args) -> ExitCode {
     let root = Path::new(&args.path);
     if !root.is_dir() {
-        eprintln!("shipsafe: not a directory: {}", args.path);
+        eprintln!("hullcheck: not a directory: {}", args.path);
         return ExitCode::from(2);
     }
 

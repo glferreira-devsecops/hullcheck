@@ -1,12 +1,12 @@
 {
-  "name": "shipsafe",
+  "name": "hullcheck",
   "owner": {
     "name": "RET Tecnologia",
     "url": "https://www.rettecnologia.org"
   },
   "plugins": [
     {
-      "name": "shipsafe",
+      "name": "hullcheck",
       "source": "./",
       "description": "Security-review skills: tenant isolation and billing webhooks, with evidence by file and line."
     }

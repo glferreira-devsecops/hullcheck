@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" alt="shipsafe" width="300">
+    <img src="assets/logo.svg" alt="hullcheck" width="300">
   </picture>
 </p>
 
@@ -14,16 +14,16 @@
   <img src="https://img.shields.io/badge/dependencies-0-22D3EE?style=flat-square" alt="zero dependencies">
   <img src="https://img.shields.io/badge/network-none-22D3EE?style=flat-square" alt="no network">
   <img src="https://img.shields.io/badge/license-MIT-0B1B2B?style=flat-square" alt="MIT">
-  <a href="https://github.com/glferreira-devsecops/shipsafe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glferreira-devsecops/shipsafe/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://github.com/glferreira-devsecops/hullcheck/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glferreira-devsecops/hullcheck/ci.yml?style=flat-square&label=CI" alt="CI"></a>
 </p>
 
 <p align="center">
-  <img src="assets/demo.svg" alt="shipsafe scan output" width="720">
+  <img src="assets/demo.svg" alt="hullcheck scan output" width="720">
 </p>
 
 ---
 
-Vibe-coded a SaaS and not sure what shipped with it? `shipsafe` reads your repo and
+Vibe-coded a SaaS and not sure what shipped with it? `hullcheck` reads your repo and
 points at the handful of mistakes that actually leak data or money: a Supabase table
 with no row level security, a `service_role` key in the browser bundle, a Stripe webhook
 that never checks its signature, an action pinned to a movable tag. It quotes the exact
@@ -48,14 +48,14 @@ and never tells you your app is secure.
 
 ```sh
 # a prebuilt binary (macOS / Linux) — verifies its own checksum
-curl -fsSL https://raw.githubusercontent.com/glferreira-devsecops/shipsafe/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/glferreira-devsecops/hullcheck/main/install.sh | sh
 
 # or from source, with Rust
-cargo install --git https://github.com/glferreira-devsecops/shipsafe
+cargo install --git https://github.com/glferreira-devsecops/hullcheck
 
 # or build it yourself
-git clone https://github.com/glferreira-devsecops/shipsafe && cd shipsafe
-cargo build --release   # binary at target/release/shipsafe
+git clone https://github.com/glferreira-devsecops/hullcheck && cd hullcheck
+cargo build --release   # binary at target/release/hullcheck
 ```
 
 The installer drops the binary in `~/.local/bin` by default (override with `INSTALL_DIR`).
@@ -65,7 +65,7 @@ any other platform builds from source.
 ## Usage
 
 ```sh
-shipsafe [PATH] [OPTIONS]
+hullcheck [PATH] [OPTIONS]
 ```
 
 | | |
@@ -87,7 +87,7 @@ Exit codes:
 ## What it looks like
 
 ```text
-shipsafe 0.1.0  ·  412 files scanned  ·  .
+hullcheck 0.1.0  ·  412 files scanned  ·  .
 read-only, no network. evidence is quoted by file and line.
 
 Fix Now 2   Monitor 1   Validate Manually 2   Unverified 0
@@ -115,7 +115,7 @@ app/api/webhook/route.ts:4  Stripe webhook handler with no signature verificatio
 Each finding ends with a ready prompt you can hand to your coding agent:
 
 ```
-For each shipsafe finding, open the quoted file:line, confirm the issue is real,
+For each hullcheck finding, open the quoted file:line, confirm the issue is real,
 then propose the smallest safe fix and a test that fails before it. Do not change
 anything you cannot confirm from the file.
 ```
@@ -143,8 +143,8 @@ These are a sharp set of common, high-cost mistakes, not a full audit.
 
 ## Ignoring files and lines
 
-shipsafe skips `node_modules`, `.git`, build output and caches on its own. For the rest, it
-reads a `.shipsafeignore` at the repository root, one gitignore-style pattern per line:
+hullcheck skips `node_modules`, `.git`, build output and caches on its own. For the rest, it
+reads a `.hullcheckignore` at the repository root, one gitignore-style pattern per line:
 
 ```gitignore
 # vendored or generated code
@@ -160,19 +160,19 @@ Patterns support `*` (within a path segment), `**` (across segments), `?`, and a
 for a directory. To silence a single line, annotate the source instead:
 
 ```ts
-const legacyKey = process.env.OLD_KEY; // shipsafe:ignore
+const legacyKey = process.env.OLD_KEY; // hullcheck:ignore
 
-// shipsafe:ignore-next-line
+// hullcheck:ignore-next-line
 const other = buildClient(url, key);
 ```
 
 ## Use it in CI
 
-shipsafe exits `1` on a Fix Now finding, so it gates a job with no extra config:
+hullcheck exits `1` on a Fix Now finding, so it gates a job with no extra config:
 
 ```yaml
-# .github/workflows/shipsafe.yml
-name: shipsafe
+# .github/workflows/hullcheck.yml
+name: hullcheck
 on: [push, pull_request]
 permissions:
   contents: read
@@ -181,11 +181,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - run: cargo install --git https://github.com/glferreira-devsecops/shipsafe
-      - run: shipsafe .
+      - run: cargo install --git https://github.com/glferreira-devsecops/hullcheck
+      - run: hullcheck .
 ```
 
-Use `shipsafe --json .` to post findings to another tool, or `shipsafe --exit-zero .` to
+Use `hullcheck --json .` to post findings to another tool, or `hullcheck --exit-zero .` to
 report without ever failing the build.
 
 ## JSON output
@@ -194,7 +194,7 @@ report without ever failing the build.
 
 ```json
 {
-  "tool": "shipsafe",
+  "tool": "hullcheck",
   "version": "0.1.0",
   "scannedFiles": 412,
   "summary": { "fixNow": 2, "monitor": 1, "validate": 2, "unverified": 0 },
@@ -216,7 +216,7 @@ report without ever failing the build.
 ## Why it is different
 
 The scanners in this space are known for two things: a wall of findings, and findings that
-are wrong. `shipsafe` is built against both.
+are wrong. `hullcheck` is built against both.
 
 - **Evidence or it does not exist.** Every finding carries `file:line` and the quoted source
   line. A signal that cannot be confirmed from the files present lands in a separate
@@ -239,7 +239,7 @@ and secret history, run [Semgrep](https://semgrep.dev),
 
 The repo ships two portable **skills** (`skills/`): tenant isolation and billing webhooks.
 Copy them to `.claude/skills/`, `.github/skills/` or `.agents/skills/`, or add the repo with
-`npx skills add glferreira-devsecops/shipsafe`.
+`npx skills add glferreira-devsecops/hullcheck`.
 
 The [RET Promptbook](https://www.rettecnologia.org/promptbook) takes this further: 13 review
 skills (auth, uploads, AI and MCP, secrets and supply chain, diff review, threat model, abuse
@@ -261,7 +261,7 @@ Validate or Unverified lane rather than Fix Now.
 
 **Does it change my repo?** No. It is read-only and writes nothing.
 
-**Does a clean run mean my app is secure?** No. shipsafe covers a set of common, high-cost
+**Does a clean run mean my app is secure?** No. hullcheck covers a set of common, high-cost
 mistakes. A clean run means those specific checks found nothing, not that there is nothing to
 find.
 
@@ -274,7 +274,7 @@ MIT. Use it only on code you own or are authorized to review.
 <details>
 <summary><strong>Português</strong></summary>
 
-`shipsafe` lê o repositório do SaaS que você construiu com um agente de código e aponta os
+`hullcheck` lê o repositório do SaaS que você construiu com um agente de código e aponta os
 poucos erros que de fato vazam dado ou dinheiro: tabela do Supabase sem row level security,
 `service_role` no bundle do navegador, webhook do Stripe sem conferir a assinatura, action
 presa a uma tag móvel. Cita a linha exata atrás de cada um e não chama de vulnerabilidade
@@ -283,16 +283,16 @@ nada que não possa te mostrar.
 Só lê arquivos. Não faz chamada de rede, não escreve nada, não roda código do seu repo e
 nunca diz que seu app está seguro.
 
-**Rodar:** `cargo install --git https://github.com/glferreira-devsecops/shipsafe`, depois
-`shipsafe` dentro do projeto. Sai com código `1` quando há achado em *Fix Now*, então serve
+**Rodar:** `cargo install --git https://github.com/glferreira-devsecops/hullcheck`, depois
+`hullcheck` dentro do projeto. Sai com código `1` quando há achado em *Fix Now*, então serve
 de gate no CI; `--json` para outra ferramenta e `--exit-zero` para não derrubar o build.
 
 **Faixas:** *Fix Now* (seguro corrigir agora), *Monitor* (depende de config fora do repo),
 *Validate Manually* (toca login, dado, cobrança, upload, admin ou IA, então um humano
 confirma) e *Unverified* (o que não deu para confirmar fica fora de Fix Now).
 
-**Ignorar:** um `.shipsafeignore` na raiz (padrões estilo gitignore) ou um comentário
-`// shipsafe:ignore` na linha (ou `// shipsafe:ignore-next-line` na linha de cima).
+**Ignorar:** um `.hullcheckignore` na raiz (padrões estilo gitignore) ou um comentário
+`// hullcheck:ignore` na linha (ou `// hullcheck:ignore-next-line` na linha de cima).
 
 Zero dependências, zero rede, tudo em Rust std. Dá para auditar o tool inteiro de uma vez. O
 kit completo (13 skills, verificador de evidência, fluxo de triagem) está no

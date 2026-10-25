@@ -14,8 +14,8 @@ use crate::rules;
 
 /// Inline directive on the finding's own line, and the directive on the line
 /// above it (eslint-style "disable next line").
-const IGNORE_SAME_LINE: &str = "shipsafe:ignore";
-const IGNORE_NEXT_LINE: &str = "shipsafe:ignore-next-line";
+const IGNORE_SAME_LINE: &str = "hullcheck:ignore";
+const IGNORE_NEXT_LINE: &str = "hullcheck:ignore-next-line";
 
 /// Scan the whole repository and return findings, sorted for stable output.
 pub fn scan(repo: &Repo) -> Vec<Finding> {
@@ -26,8 +26,8 @@ pub fn scan(repo: &Repo) -> Vec<Finding> {
     findings
 }
 
-/// True when the finding is silenced by an inline directive: `shipsafe:ignore`
-/// on its own line, or `shipsafe:ignore-next-line` on the line above it.
+/// True when the finding is silenced by an inline directive: `hullcheck:ignore`
+/// on its own line, or `hullcheck:ignore-next-line` on the line above it.
 fn suppressed(repo: &Repo, f: &Finding) -> bool {
     let Some(file) = repo.get(&f.file) else {
         return false;
