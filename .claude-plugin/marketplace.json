@@ -1,0 +1,15 @@
+{
+  "name": "shipsafe",
+  "owner": {
+    "name": "RET Tecnologia",
+    "url": "https://www.rettecnologia.org"
+  },
+  "plugins": [
+    {
+      "name": "shipsafe",
+      "source": "./",
+      "description": "Security-review skills: tenant isolation and billing webhooks, with evidence by file and line."
+    }
+  ],
+  "description": "Portable, read-only security-review skills and tools for AI-built SaaS, by RET Tecnologia."
+}

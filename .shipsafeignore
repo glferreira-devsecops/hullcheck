@@ -1,0 +1,3 @@
+# Files that intentionally contain example or detector payloads.
+tests/
+README.md

@@ -1,0 +1,2 @@
+export const AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE";
+export const PEM = "-----BEGIN PRIVATE KEY-----EXAMPLEFAKE-----END PRIVATE KEY-----";

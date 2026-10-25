@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="shipsafe">
+  <title>shipsafe</title>
+  <defs>
+    <linearGradient id="ss-tile" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#153453"/>
+      <stop offset="1" stop-color="#0B1B2B"/>
+    </linearGradient>
+  </defs>
+  <!-- modern product tile: the "safe" container -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#ss-tile)"/>
+  <!-- bold check that doubles as a ship's bow wave: the verified evidence -->
+  <path d="M16 33 L28 45 L50 20" fill="none" stroke="#22D3EE" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- wake echo: a motion tick under the hull -->
+  <path d="M20 50 L32 50" stroke="#22D3EE" stroke-width="5" stroke-linecap="round" opacity="0.45"/>
+</svg>

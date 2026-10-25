@@ -1,0 +1,24 @@
+[package]
+name = "shipsafe"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Read-only security review for the SaaS you built with an AI agent. Zero dependencies, zero network. Evidence by file and line, no false certainty."
+license = "MIT"
+authors = ["RET Tecnologia"]
+homepage = "https://www.rettecnologia.org/promptbook"
+repository = "https://github.com/glferreira-devsecops/shipsafe"
+keywords = ["security", "saas", "supabase", "stripe", "static-analysis"]
+categories = ["command-line-utilities", "development-tools"]
+readme = "README.md"
+
+# No dependencies on purpose. The whole tool is std-only so anyone can audit it
+# in one sitting and no transitive package can ever ship a surprise.
+[dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"
