@@ -25,6 +25,15 @@ pub const PER_FILE: &[PerFileRule] = &[
     mcp_and_hooks,
     github_actions_pin,
     github_pr_target,
+    gha_injection,
+    firebase_rules,
+    committed_env,
+    cors_wildcard,
+    tls_verification_off,
+    jwt_alg_none,
+    dangerous_html,
+    prisma_raw_unsafe,
+    debug_production,
 ];
 
 /// Rules that need the whole repository at once (cross-file reasoning).
@@ -78,6 +87,18 @@ fn is_client_path(rel: &str) -> bool {
         || rel.starts_with("src/")
         || rel.starts_with("components/")
         || rel.starts_with("pages/")
+}
+
+/// True when the file is a `.env`-family file (but not an example/template). Env
+/// files are handled only by `committed_env`, which redacts values, so no other
+/// rule ever prints a line from one.
+fn is_env_file(name: &str) -> bool {
+    name == ".env"
+        || (name.starts_with(".env.")
+            && !name.ends_with(".example")
+            && !name.ends_with(".sample")
+            && !name.ends_with(".template")
+            && !name.ends_with(".dist"))
 }
 
 /// True when the extension is a source-code file, not prose or config.
@@ -231,6 +252,11 @@ fn credential_columns(f: &TextFile) -> Vec<Finding> {
 /// High-signal secret literals that must never reach the browser bundle.
 fn client_secret(f: &TextFile) -> Vec<Finding> {
     const RULE: &str = "client-secret";
+    // Env files are handled by committed_env with redaction; never scan their
+    // raw lines here, or a real secret value would be printed in a finding.
+    if is_env_file(f.name()) {
+        return Vec::new();
+    }
     let client = is_client_path(&f.rel);
     let mut out = Vec::new();
     for (i, line) in f.lines.iter().enumerate() {
@@ -339,9 +365,43 @@ fn client_secret(f: &TextFile) -> Vec<Finding> {
                 "Remove it, rotate the key pair, and keep private keys out of the repo entirely.",
             ));
         }
+
+        // Well-known provider token prefixes (patterns informed by Gitleaks).
+        for (marker, label) in TOKEN_MARKERS {
+            if line.contains(marker) {
+                out.push(Finding::new(
+                    RULE,
+                    Lane::FixNow,
+                    format!("{label} hardcoded in source"),
+                    &f.rel,
+                    n,
+                    line,
+                    "A committed provider token works until it is revoked, including from git history.",
+                    "Remove it, move it to a server-only secret, and rotate the token with the provider.",
+                ));
+                break; // one token finding per line is enough
+            }
+        }
     }
     out
 }
+
+/// Well-known secret token prefixes and what they are. The patterns are informed
+/// by the Gitleaks ruleset; each line carries the ignore directive because the
+/// literal below is a detector pattern, not a real secret.
+const TOKEN_MARKERS: &[(&str, &str)] = &[
+    ("ghp_", "GitHub personal access token"), // hullcheck:ignore
+    ("github_pat_", "GitHub fine-grained token"), // hullcheck:ignore
+    ("gho_", "GitHub OAuth token"),           // hullcheck:ignore
+    ("glpat-", "GitLab personal access token"), // hullcheck:ignore
+    ("xoxb-", "Slack bot token"),             // hullcheck:ignore
+    ("xoxp-", "Slack user token"),            // hullcheck:ignore
+    ("sk-ant-", "Anthropic API key"),         // hullcheck:ignore
+    ("sk-proj-", "OpenAI project key"),       // hullcheck:ignore
+    ("AIza", "Google API key"),               // hullcheck:ignore
+    ("rk_live_", "Stripe restricted key"),    // hullcheck:ignore
+    ("dop_v1_", "DigitalOcean token"),        // hullcheck:ignore
+];
 
 /// Return the AWS key literal when the line contains an `AKIA`/`ASIA` id of the
 /// right length.
@@ -528,6 +588,313 @@ fn github_pr_target(f: &TextFile) -> Vec<Finding> {
         }
     }
     Vec::new()
+}
+
+// ---- rule: firebase security rules -----------------------------------------
+
+/// A Firebase rule that grants access with `if true` (Firestore/Storage) or
+/// `".read"/".write": true` (Realtime Database) is the Firebase equivalent of the
+/// open-Supabase mistake: anyone can read or write the data.
+fn firebase_rules(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "firebase-rules";
+    let name = f.name();
+    let is_fb = name == "firestore.rules"
+        || name == "storage.rules"
+        || name == "database.rules.json"
+        || f.ext() == "rules";
+    if !is_fb {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let n = i + 1;
+        if has(line, "allow") && has(line, "if true") {
+            out.push(Finding::new(
+                RULE,
+                Lane::FixNow,
+                "Firebase rule grants access to everyone (if true)",
+                &f.rel,
+                n,
+                line,
+                "An `if true` rule lets any client read or write the data it guards, with no authentication.",
+                "Scope the rule to the signed-in user, e.g. `allow read, write: if request.auth != null && request.auth.uid == resource.data.owner;`.",
+            ));
+        } else if (has(line, "\".read\"") || has(line, "\".write\"")) && has(line, "true") {
+            out.push(Finding::new(
+                RULE,
+                Lane::FixNow,
+                "Realtime Database rule is open (true)",
+                &f.rel,
+                n,
+                line,
+                "A `.read`/`.write` of `true` opens the database node to anyone.",
+                "Replace `true` with an `auth`-based condition, e.g. `\"auth.uid === $uid\"`.",
+            ));
+        }
+    }
+    out
+}
+
+// ---- rule: committed .env file ---------------------------------------------
+
+/// A committed `.env` usually means real secrets live in git history. Values are
+/// never printed: the evidence is the variable name with the value redacted.
+fn committed_env(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "committed-env";
+    let name = f.name();
+    if !is_env_file(name) {
+        return Vec::new();
+    }
+    let (n, quote) = f
+        .lines
+        .iter()
+        .enumerate()
+        .find(|(_, l)| !l.trim_start().starts_with('#') && l.contains('='))
+        .map(|(i, l)| (i + 1, redact_env(l)))
+        .unwrap_or((1, "(environment file present)".to_string()));
+    vec![Finding::new(
+        RULE,
+        Lane::Validate,
+        format!("Environment file `{name}` is committed to the repository"),
+        &f.rel,
+        n,
+        quote,
+        "A committed .env usually means real secrets are readable by anyone with the repo, including from git history.",
+        "Remove it from the repo, add it to .gitignore, rotate anything it held, and commit a .env.example with blank values instead.",
+    )]
+}
+
+/// Keep only the variable name, replacing the value with an ellipsis, so a real
+/// secret is never printed in a finding.
+fn redact_env(line: &str) -> String {
+    match line.split_once('=') {
+        Some((k, _)) => format!("{}=…", k.trim()),
+        None => "…".to_string(),
+    }
+}
+
+// ---- rule: permissive CORS -------------------------------------------------
+
+/// CORS set to any origin lets any website call the endpoint from a browser; with
+/// credentials it can read authenticated responses.
+fn cors_wildcard(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "cors-wildcard";
+    if !is_code(f.ext()) {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let n = i + 1;
+        // hullcheck:ignore-next-line detector pattern
+        if has(line, "access-control-allow-origin") && line.contains('*') {
+            out.push(Finding::new(
+                RULE,
+                Lane::Monitor,
+                "CORS allows any origin (wildcard header)",
+                &f.rel,
+                n,
+                line,
+                "Any site can call this endpoint from a browser; combined with credentials it can read authenticated responses.",
+                "Return an explicit allowlist of origins instead of `*`, especially when the endpoint uses cookies or auth.",
+            ));
+        // hullcheck:ignore-next-line detector pattern
+        } else if has(line, "origin: true") || has(line, "origin:true") {
+            out.push(Finding::new(
+                RULE,
+                Lane::Monitor,
+                "CORS reflects any request origin",
+                &f.rel,
+                n,
+                line,
+                "Reflecting any request origin is the same as allowing all origins, and it passes the credentialed-request check.",
+                "Pass an explicit list of allowed origins instead of `true`.",
+            ));
+        }
+    }
+    out
+}
+
+// ---- rule: github actions script injection ---------------------------------
+
+/// Interpolating attacker-controllable context (a PR title, a branch name) into a
+/// workflow runs their text as part of your job. Pattern informed by zizmor's
+/// template-injection check.
+fn gha_injection(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "gha-injection";
+    let in_workflows =
+        f.rel.starts_with(".github/workflows/") && (f.ext() == "yml" || f.ext() == "yaml");
+    if !in_workflows {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let n = i + 1;
+        let interpolates =
+            has(line, "${{") && (has(line, "github.event.") || has(line, "github.head_ref"));
+        let attacker_field = has(line, ".title")
+            || has(line, ".body")
+            || has(line, "head_ref")
+            || has(line, ".name")
+            || has(line, ".email")
+            || has(line, ".ref")
+            || has(line, ".label");
+        if interpolates && attacker_field {
+            out.push(Finding::new(
+                RULE,
+                Lane::Validate,
+                "Workflow interpolates attacker-controllable context",
+                &f.rel,
+                n,
+                line,
+                "A PR title, branch name or similar is attacker-controlled; interpolated into a `run:` block it executes as your job.",
+                "Pass the value through an `env:` variable and reference it as `\"$VAR\"`, instead of inlining the `${{ ... }}` expression.",
+            ));
+        }
+    }
+    out
+}
+
+// ---- rules scoped to web/python source (never match this Rust file) --------
+
+/// JavaScript/TypeScript front- and back-end source. Scoping the web rules here
+/// keeps them off this crate's own `.rs` detector lines, so no ignore directive
+/// is needed.
+fn is_web_code(ext: &str) -> bool {
+    matches!(
+        ext,
+        "ts" | "tsx" | "js" | "jsx" | "mjs" | "cjs" | "vue" | "svelte"
+    )
+}
+
+/// Disabling TLS certificate verification lets any server, including an
+/// attacker's, impersonate the real one. Pattern from Semgrep's insecure-transport.
+fn tls_verification_off(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "tls-verification-off";
+    if !is_web_code(f.ext()) {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let off = (has(line, "rejectunauthorized") && has(line, "false"))
+            || (has(line, "node_tls_reject_unauthorized")
+                && (has(line, "\"0\"") || has(line, "'0'") || has(line, "=0") || has(line, "= 0")));
+        if off {
+            out.push(Finding::new(
+                RULE,
+                Lane::Validate,
+                "TLS certificate verification disabled",
+                &f.rel,
+                i + 1,
+                line,
+                "With verification off, any server (including an attacker's) can impersonate the real one and read the traffic.",
+                "Remove this, fix the real certificate or CA issue, and scope any exception to one https.Agent with NODE_EXTRA_CA_CERTS.",
+            ));
+        }
+    }
+    out
+}
+
+/// A JWT configured to accept the `none` algorithm means tokens are trusted with
+/// no signature, so anyone can forge them. Pattern from the SAST jwt-none rules.
+fn jwt_alg_none(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "jwt-alg-none";
+    if !(is_web_code(f.ext()) || f.ext() == "py") {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let names_alg = has(line, "alg");
+        let picks_none = has(line, "\"none\"") || has(line, "'none'");
+        if names_alg && picks_none {
+            out.push(Finding::new(
+                RULE,
+                Lane::Validate,
+                "JWT allows the none algorithm",
+                &f.rel,
+                i + 1,
+                line,
+                "The none algorithm accepts tokens with no signature, so anyone can forge a valid-looking token.",
+                "Pin an explicit algorithm (HS256/RS256) in sign and verify, and never list none among the allowed ones.",
+            ));
+        }
+    }
+    out
+}
+
+/// `dangerouslySetInnerHTML` bypasses React's escaping; user- or model-derived
+/// HTML here is an XSS vector, the most common AI-generated web bug.
+fn dangerous_html(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "dangerous-html";
+    if !is_web_code(f.ext()) {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        if has(line, "dangerouslySetInnerHTML") {
+            out.push(Finding::new(
+                RULE,
+                Lane::Monitor,
+                "React dangerouslySetInnerHTML in use",
+                &f.rel,
+                i + 1,
+                line,
+                "This bypasses React's escaping; if the HTML is user- or model-derived it executes as script in the browser.",
+                "Render as text where possible, or sanitize with DOMPurify before setting, and add a Content-Security-Policy.",
+            ));
+        }
+    }
+    out
+}
+
+/// Prisma's `$queryRawUnsafe`/`$executeRawUnsafe` run the string as SQL; any
+/// interpolated input is an injection path (the tagged `$queryRaw` form is safe).
+fn prisma_raw_unsafe(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "prisma-raw-unsafe";
+    if !is_web_code(f.ext()) {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        if has(line, "queryRawUnsafe") || has(line, "executeRawUnsafe") {
+            out.push(Finding::new(
+                RULE,
+                Lane::Validate,
+                "Prisma raw-unsafe query in use",
+                &f.rel,
+                i + 1,
+                line,
+                "$queryRawUnsafe / $executeRawUnsafe run the string as SQL, so interpolated user input becomes SQL injection.",
+                "Use the tagged `$queryRaw`...${value}...`` form for values, and allowlist any dynamic identifiers.",
+            ));
+        }
+    }
+    out
+}
+
+/// Flask/Django debug mode in production leaks stack traces and settings, and
+/// Flask's debugger exposes a remote code-execution console.
+fn debug_production(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "debug-enabled";
+    if f.ext() != "py" {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let normalized = line.replace(' ', "").to_ascii_lowercase();
+        if normalized.contains("debug=true") {
+            out.push(Finding::new(
+                RULE,
+                Lane::Monitor,
+                "Debug mode enabled",
+                &f.rel,
+                i + 1,
+                line,
+                "Debug mode leaks stack traces and settings, and Flask's debugger exposes a remote code-execution console.",
+                "Load the flag from an env var that defaults to False, and keep debug off in production.",
+            ));
+        }
+    }
+    out
 }
 
 // ---- rule: agent instruction doctor ----------------------------------------

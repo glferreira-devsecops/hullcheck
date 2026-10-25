@@ -1,0 +1,54 @@
+.TH HULLCHECK 1 "2026-10-25" "hullcheck 0.1.0" "User Commands"
+.SH NAME
+hullcheck \- read-only security review for the SaaS you built with an AI agent
+.SH SYNOPSIS
+.B hullcheck
+[\fIPATH\fR] [\fB--json\fR] [\fB--exit-zero\fR] [\fB-h\fR] [\fB-V\fR]
+.SH DESCRIPTION
+.B hullcheck
+reads a repository and reports the common mistakes that leak data or money
+(Supabase and Firebase rules, secrets in client code, unverified Stripe
+webhooks, TLS verification turned off, unpinned or injectable GitHub Actions,
+and more). Every finding quotes the exact file and line behind it, grouped into
+the lanes Fix Now, Monitor, Validate Manually and Unverified.
+.PP
+It reads files only. It makes no network calls, writes nothing, runs no code
+from the scanned repository, and never claims the application is secure.
+.SH OPTIONS
+.TP
+.B PATH
+Repository to scan. Defaults to the current directory.
+.TP
+.B --json
+Emit machine-readable JSON instead of the human report.
+.TP
+.B --exit-zero
+Always exit 0, even when there are Fix Now findings.
+.TP
+.B -h, --help
+Print help and exit.
+.TP
+.B -V, --version
+Print version and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+No Fix Now findings, or \fB--exit-zero\fR was given.
+.TP
+.B 1
+At least one Fix Now finding.
+.TP
+.B 2
+Bad usage, or PATH is not a directory.
+.SH IGNORING
+A
+.B .hullcheckignore
+file at the repository root lists gitignore-style patterns to skip. An inline
+.B hullcheck:ignore
+comment silences one line, and
+.B hullcheck:ignore-next-line
+silences the line below it.
+.SH "SEE ALSO"
+The full review kit: https://www.rettecnologia.org/promptbook
+.SH AUTHOR
+RET Tecnologia.

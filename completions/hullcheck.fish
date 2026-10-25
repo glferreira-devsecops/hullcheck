@@ -1,0 +1,5 @@
+complete -c hullcheck -l json -d 'Emit JSON instead of the human report'
+complete -c hullcheck -l exit-zero -d 'Always exit 0, even with Fix Now findings'
+complete -c hullcheck -s h -l help -d 'Print help'
+complete -c hullcheck -s V -l version -d 'Print version'
+complete -c hullcheck -f -a '(__fish_complete_directories)'

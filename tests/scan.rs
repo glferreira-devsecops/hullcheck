@@ -35,6 +35,15 @@ fn vuln_fixture_flags_every_rule() {
         "mcp-hooks",
         "gha-pin",
         "gha-pr-target",
+        "gha-injection",
+        "firebase-rules",
+        "committed-env",
+        "cors-wildcard",
+        "tls-verification-off",
+        "jwt-alg-none",
+        "dangerous-html",
+        "prisma-raw-unsafe",
+        "debug-enabled",
         "agent-doctor",
     ] {
         assert!(has_rule(&f, rule), "expected a {rule} finding, got: {f:?}");
@@ -156,6 +165,89 @@ fn ignore_directive_and_hullcheckignore_silence_findings() {
         f.is_empty(),
         "both ignore mechanisms should silence the findings, got: {f:?}"
     );
+}
+
+#[test]
+fn committed_env_never_prints_the_value() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "committed-env")
+        .into_iter()
+        .next()
+        .expect("committed-env finding");
+    assert_eq!(hit.lane, Lane::Validate);
+    assert!(
+        hit.quote.contains("=…"),
+        "value must be redacted, got: {}",
+        hit.quote
+    );
+    assert!(
+        !hit.quote.contains("secretpw"),
+        "a real secret value leaked into the finding"
+    );
+    // No other rule should have printed a raw line from the .env either.
+    assert!(
+        !f.iter()
+            .any(|x| x.file.ends_with(".env") && x.quote.contains("secretpw")),
+        "no rule may print a raw .env value"
+    );
+}
+
+#[test]
+fn firebase_if_true_is_fix_now() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "firebase-rules")
+        .into_iter()
+        .next()
+        .expect("firebase finding");
+    assert_eq!(hit.lane, Lane::FixNow);
+    assert!(hit.quote.contains("if true"));
+}
+
+#[test]
+fn provider_token_prefix_is_fix_now() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "client-secret")
+        .into_iter()
+        .find(|x| x.title.contains("GitHub personal access token"))
+        .expect("the ghp_ token should be flagged");
+    assert_eq!(hit.lane, Lane::FixNow);
+}
+
+#[test]
+fn gha_injection_is_validate() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "gha-injection")
+        .into_iter()
+        .next()
+        .expect("gha-injection finding");
+    assert_eq!(hit.lane, Lane::Validate);
+    assert!(hit.quote.contains("github.event.pull_request.title"));
+}
+
+#[test]
+fn tls_off_is_validate_and_debug_is_python_only() {
+    let f = review_fixture("vuln");
+    let tls = rule_at(&f, "tls-verification-off")
+        .into_iter()
+        .next()
+        .expect("tls finding");
+    assert_eq!(tls.lane, Lane::Validate);
+    assert!(tls.quote.contains("rejectUnauthorized"));
+    let dbg = rule_at(&f, "debug-enabled")
+        .into_iter()
+        .next()
+        .expect("debug finding");
+    assert!(dbg.file.ends_with(".py"), "debug rule is python-only");
+}
+
+#[test]
+fn dangerous_html_is_monitor() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "dangerous-html")
+        .into_iter()
+        .next()
+        .expect("dangerous-html finding");
+    assert_eq!(hit.lane, Lane::Monitor);
 }
 
 #[test]

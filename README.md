@@ -1,118 +1,104 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo.svg" alt="hullcheck" width="300">
+    <img src="assets/logo.svg" alt="hullcheck" width="320">
   </picture>
 </p>
 
 <p align="center">
-  <strong>Read-only security review for the SaaS you built with an AI agent.</strong><br>
-  Zero dependencies. Zero network. Every finding quotes the exact file and line. No false certainty.
+  <strong>Check the hull before you ship.</strong><br>
+  A read-only security review for the SaaS you built with an AI agent. Zero dependencies, zero network, evidence by file and line.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/dependencies-0-22D3EE?style=flat-square" alt="zero dependencies">
   <img src="https://img.shields.io/badge/network-none-22D3EE?style=flat-square" alt="no network">
+  <img src="https://img.shields.io/badge/rules-18-22D3EE?style=flat-square" alt="18 rules">
+  <a href="https://crates.io/crates/hullcheck"><img src="https://img.shields.io/crates/v/hullcheck?style=flat-square&color=0B1B2B" alt="crates.io"></a>
   <img src="https://img.shields.io/badge/license-MIT-0B1B2B?style=flat-square" alt="MIT">
   <a href="https://github.com/glferreira-devsecops/hullcheck/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glferreira-devsecops/hullcheck/ci.yml?style=flat-square&label=CI" alt="CI"></a>
 </p>
 
 <p align="center">
-  <img src="assets/demo.svg" alt="hullcheck scan output" width="720">
+  <img src="assets/demo.svg" alt="hullcheck scan output" width="760">
 </p>
 
 ---
 
-Vibe-coded a SaaS and not sure what shipped with it? `hullcheck` reads your repo and
-points at the handful of mistakes that actually leak data or money: a Supabase table
-with no row level security, a `service_role` key in the browser bundle, a Stripe webhook
-that never checks its signature, an action pinned to a movable tag. It quotes the exact
-line behind each one, and it refuses to call anything a vulnerability it cannot show you.
+You shipped a SaaS with a coding agent and you are not sure what went out with it.
+`hullcheck` reads the repo and points at the handful of mistakes that actually leak
+data or money: a database table anyone can read, a `service_role` key in the browser
+bundle, a payment webhook that never checks its signature, TLS verification switched
+off, a GitHub Action that runs a stranger's code.
 
-It reads files. It makes no network calls, writes nothing, runs no code from your repo,
-and never tells you your app is secure.
+It quotes the exact line behind every finding, and it refuses to call anything a
+vulnerability it cannot show you. It reads files only: **no network, no writes, no code
+from your repo, and it never tells you your app is secure.**
 
-- [Install](#install)
-- [Usage](#usage)
-- [What it looks like](#what-it-looks-like)
-- [What it checks](#what-it-checks)
-- [Ignoring files and lines](#ignoring-files-and-lines)
-- [Use it in CI](#use-it-in-ci)
-- [JSON output](#json-output)
-- [Why it is different](#why-it-is-different)
-- [Skills and the full kit](#skills-and-the-full-kit)
-- [Contributing](#contributing)
-- [FAQ](#faq)
-
-## Install
+## Quickstart
 
 ```sh
-# a prebuilt binary (macOS / Linux) — verifies its own checksum
+# install (prebuilt binary, verifies its own checksum)
 curl -fsSL https://raw.githubusercontent.com/glferreira-devsecops/hullcheck/main/install.sh | sh
 
-# or from source, with Rust
-cargo install --git https://github.com/glferreira-devsecops/hullcheck
+# or: cargo install hullcheck
 
-# or build it yourself
-git clone https://github.com/glferreira-devsecops/hullcheck && cd hullcheck
-cargo build --release   # binary at target/release/hullcheck
+# run it in your project
+hullcheck
 ```
 
-The installer drops the binary in `~/.local/bin` by default (override with `INSTALL_DIR`).
-Prebuilt binaries ship for `x86_64-linux`, `aarch64-apple-darwin` and `x86_64-apple-darwin`;
-any other platform builds from source.
+That is the whole setup. No account, no config, no telemetry. It finishes in well
+under a second on a typical repo, and exits `1` if there is anything in the Fix Now
+lane, so it also works as a CI gate.
 
-## Usage
+## What it catches
 
-```sh
-hullcheck [PATH] [OPTIONS]
-```
+Eighteen checks, each one a concrete, high-cost mistake, grouped by where it bites.
+Every finding lands in a lane: **Fix Now** (safe to correct today), **Monitor**
+(depends on config outside the repo), **Validate Manually** (touches login, data,
+money, uploads, admin or AI, so a human confirms), or **Unverified** (the line could
+not be confirmed, so it never enters Fix Now).
 
-| | |
-| --- | --- |
-| `PATH` | repository to scan (default: current directory) |
-| `--json` | emit JSON instead of the human report |
-| `--exit-zero` | always exit 0, even with Fix Now findings |
-| `-h`, `--help` | print help |
-| `-V`, `--version` | print version |
+**Data access**
+- `supabase-rls` — a table with no row level security, or a policy with `using (true)`
+- `firebase-rules` — a Firestore/Storage/RTDB rule open with `if true` / `true`
+- `credential-columns` — a `password` column in a migration (the 2026 Supabase plaintext mistake)
+- `prisma-raw-unsafe` — `$queryRawUnsafe` / `$executeRawUnsafe` running interpolated SQL
 
-Exit codes:
+**Secrets**
+- `client-secret` — `service_role`, a Stripe secret key, an AWS key, a private key, or a secret behind a public env prefix, plus provider tokens (GitHub, GitLab, Slack, OpenAI, Anthropic, Google, DigitalOcean)
+- `committed-env` — a committed `.env` file (values are redacted, never printed)
 
-| Code | Meaning |
-| --- | --- |
-| `0` | no Fix Now findings (or `--exit-zero`) |
-| `1` | at least one Fix Now finding |
-| `2` | bad usage (unknown flag, path is not a directory) |
+**Money**
+- `stripe-webhook` — a Stripe webhook handler that never verifies the signature
 
-## What it looks like
+**Transport & auth**
+- `tls-verification-off` — `rejectUnauthorized: false` / `NODE_TLS_REJECT_UNAUTHORIZED=0`
+- `jwt-alg-none` — a JWT configured to accept the `none` algorithm
+- `cors-wildcard` — CORS open to any origin
 
-```text
-hullcheck 0.1.0  ·  412 files scanned  ·  .
-read-only, no network. evidence is quoted by file and line.
+**Frontend**
+- `dangerous-html` — `dangerouslySetInnerHTML`, the most common AI-generated XSS
+- `public-sourcemaps` — production browser source maps left on
 
-Fix Now 2   Monitor 1   Validate Manually 2   Unverified 0
+**Server config**
+- `debug-enabled` — Flask/Django debug mode on
 
-## Fix Now
+**CI & supply chain**
+- `gha-pin` — a GitHub Action pinned to a movable tag instead of a commit SHA
+- `gha-pr-target` — a workflow using the `pull_request_target` trigger
+- `gha-injection` — a workflow interpolating an attacker-controlled PR title or branch
 
-app/page.tsx:2  Secret exposed through public env var `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`
-    const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
-    why: Any variable with a public prefix is inlined into the client bundle and visible to every visitor.
-    fix: Drop the public prefix and read this value only on the server; rotate it, since it was already shipped.
+**Agents & tooling**
+- `mcp-hooks` — an MCP server or editor hook that runs a local command
+- `agent-doctor` — a `CLAUDE.md` shadowing `AGENTS.md`, a `.md` in `.cursor/rules`, an ignored `.antigravity.md`, a stray `.cursorrules`
 
-supabase/migrations/001_init.sql:7  Row level security policy matches every row (USING (true))
-    create policy "read" on public.profiles for select using (true);
-    why: A `using (true)` policy lets every request read the rows it guards, so RLS is on but enforces nothing.
-    fix: Replace `true` with a predicate that ties the row to the caller, e.g. `auth.uid() = user_id`.
+This is a sharp set of common mistakes, not a full audit. A clean run means these
+checks found nothing, not that there is nothing to find.
 
-## Validate Manually
+## Hand it to your agent
 
-app/api/webhook/route.ts:4  Stripe webhook handler with no signature verification found
-    const event = await req.json();
-    why: Without verifying the stripe-signature header, anyone who finds the URL can forge a paid event.
-    fix: Verify the event with stripe.webhooks.constructEvent(body, sig, secret) before acting on it.
-```
-
-Each finding ends with a ready prompt you can hand to your coding agent:
+Every report ends with a prompt you can paste straight into your coding agent:
 
 ```
 For each hullcheck finding, open the quoted file:line, confirm the issue is real,
@@ -120,44 +106,37 @@ then propose the smallest safe fix and a test that fails before it. Do not chang
 anything you cannot confirm from the file.
 ```
 
-## What it checks
+## Usage
 
-| Rule | Looks for | Lane |
-| --- | --- | --- |
-| `supabase-rls` | table created with no row level security; a policy with `using (true)` | Validate / Fix Now |
-| `credential-columns` | a `password` column in a migration (the 2026 Supabase plaintext mistake) | Validate |
-| `client-secret` | `service_role`, a Stripe secret key, an AWS key, a private key, or a secret behind a public env prefix | Fix Now |
-| `stripe-webhook` | a Stripe webhook handler that never verifies the signature | Validate |
-| `public-sourcemaps` | production browser source maps turned on | Monitor |
-| `mcp-hooks` | an MCP server or editor hook that runs a local command | Validate |
-| `gha-pin` | a GitHub Action pinned to a tag or branch, not a commit SHA | Monitor |
-| `gha-pr-target` | a workflow using the `pull_request_target` trigger | Validate |
-| `agent-doctor` | `CLAUDE.md` shadowing `AGENTS.md`, a `.md` in `.cursor/rules`, an ignored `.antigravity.md`, a stray `.cursorrules` | Monitor / Validate |
+```sh
+hullcheck [PATH] [OPTIONS]
+```
 
-Lanes: **Fix Now** is safe to correct today. **Monitor** depends on config outside the repo.
-**Validate Manually** touches login, data, billing, uploads, admin or AI tools, so a human
-confirms before anyone calls it a vulnerability. **Unverified** is a signal whose line could
-not be confirmed; it never enters Fix Now.
+| Option | |
+| --- | --- |
+| `PATH` | repository to scan (default: current directory) |
+| `--json` | emit JSON instead of the human report |
+| `--exit-zero` | always exit 0, even with Fix Now findings |
+| `-h`, `--help` | print help |
+| `-V`, `--version` | print version |
 
-These are a sharp set of common, high-cost mistakes, not a full audit.
+Exit codes: `0` clean (or `--exit-zero`), `1` a Fix Now finding is present, `2` bad usage.
+
+Shell completions live in [`completions/`](completions) (bash, zsh, fish) and a man
+page in [`doc/hullcheck.1`](doc/hullcheck.1).
 
 ## Ignoring files and lines
 
-hullcheck skips `node_modules`, `.git`, build output and caches on its own. For the rest, it
-reads a `.hullcheckignore` at the repository root, one gitignore-style pattern per line:
+hullcheck already skips `node_modules`, `.git`, build output and caches. For the rest,
+drop a `.hullcheckignore` at the repo root (gitignore-style: `*`, `**`, `?`, trailing `/`):
 
 ```gitignore
-# vendored or generated code
 vendor/
 public/build/**
 *.min.js
-
-# a file you reviewed and accept
-supabase/migrations/legacy.sql
 ```
 
-Patterns support `*` (within a path segment), `**` (across segments), `?`, and a trailing `/`
-for a directory. To silence a single line, annotate the source instead:
+To silence one line, annotate the source:
 
 ```ts
 const legacyKey = process.env.OLD_KEY; // hullcheck:ignore
@@ -167,8 +146,6 @@ const other = buildClient(url, key);
 ```
 
 ## Use it in CI
-
-hullcheck exits `1` on a Fix Now finding, so it gates a job with no extra config:
 
 ```yaml
 # .github/workflows/hullcheck.yml
@@ -181,16 +158,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - run: cargo install --git https://github.com/glferreira-devsecops/hullcheck
+      - run: cargo install hullcheck
       - run: hullcheck .
 ```
 
-Use `hullcheck --json .` to post findings to another tool, or `hullcheck --exit-zero .` to
-report without ever failing the build.
+Use `hullcheck --json .` to feed another tool, or `--exit-zero` to report without
+failing the build.
 
 ## JSON output
-
-`--json` prints a stable document: a summary count per lane and one object per finding.
 
 ```json
 {
@@ -206,8 +181,8 @@ report without ever failing the build.
       "file": "app/page.tsx",
       "line": 2,
       "quote": "const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;",
-      "impact": "Any variable with a public prefix is inlined into the client bundle...",
-      "fix": "Drop the public prefix and read this value only on the server; rotate it..."
+      "impact": "...",
+      "fix": "..."
     }
   ]
 }
@@ -215,55 +190,50 @@ report without ever failing the build.
 
 ## Why it is different
 
-The scanners in this space are known for two things: a wall of findings, and findings that
-are wrong. `hullcheck` is built against both.
+The scanners in this space are known for a wall of findings, half of them wrong.
+hullcheck is built against both.
 
-- **Evidence or it does not exist.** Every finding carries `file:line` and the quoted source
-  line. A signal that cannot be confirmed from the files present lands in a separate
-  **Unverified** lane, never in Fix Now.
-- **Lanes, not a severity lottery.** You always know whether something is safe to fix now or
-  needs a human first.
-- **Zero dependencies, zero network.** The whole tool is std-only Rust (~1.5k lines). No
-  package tree can ship a surprise, nothing phones home, and you can audit all of it in one
-  sitting. It scans files in parallel and finishes in well under a second on a typical repo.
-- **It reads the agent, not just the app.** The *agent instruction doctor* tells you which
-  instruction file each coding agent actually loads, so the rules you wrote are not silently
-  ignored.
+- **Evidence or it does not exist.** Every finding carries `file:line` and the quoted
+  line. A signal it cannot confirm goes to the **Unverified** lane, never to Fix Now.
+- **Lanes, not a severity lottery.** You always know whether something is safe to fix
+  now or needs a human first.
+- **Zero dependencies, zero network.** The whole tool is std-only Rust, about 2k lines.
+  No package tree can ship a surprise, nothing phones home, and you can audit all of it
+  in one sitting. It scans files in parallel and `.env` values are redacted, never printed.
+- **It reads the agent, not just the app.** `agent-doctor` tells you which instruction
+  file each coding agent actually loads, so the rules you wrote are not silently ignored.
 
-It is the fast first pass, not a replacement for deeper tools. For full SAST, dependency CVEs
-and secret history, run [Semgrep](https://semgrep.dev),
-[osv-scanner](https://github.com/google/osv-scanner) and
-[gitleaks](https://github.com/gitleaks/gitleaks) alongside it.
+## Not a silver bullet
 
-## Skills and the full kit
+hullcheck is the fast first pass. For deep SAST, dependency CVEs and secret history, run
+[Semgrep](https://semgrep.dev), [osv-scanner](https://github.com/google/osv-scanner) and
+[gitleaks](https://github.com/gitleaks/gitleaks) alongside it. When a finding touches
+money, access or customer data, a human validates before it is called a vulnerability.
 
-The repo ships two portable **skills** (`skills/`): tenant isolation and billing webhooks.
-Copy them to `.claude/skills/`, `.github/skills/` or `.agents/skills/`, or add the repo with
-`npx skills add glferreira-devsecops/hullcheck`.
+## The full review kit
 
-The [RET Promptbook](https://www.rettecnologia.org/promptbook) takes this further: 13 review
-skills (auth, uploads, AI and MCP, secrets and supply chain, diff review, threat model, abuse
-and rate limits, LGPD, skill vetting and more), an evidence verifier for Claude Code and
-Codex, agent-file paths checked against each tool's official docs, and the full triage flow
-from signal to decision.
+The repo ships two portable **skills** (`skills/`): tenant isolation and billing
+webhooks. Copy them to `.claude/skills/`, `.github/skills/` or `.agents/skills/`, or add
+the repo with `npx skills add glferreira-devsecops/hullcheck`.
+
+The [RET Promptbook](https://www.rettecnologia.org/promptbook) goes further: 13 review
+skills (auth, uploads, AI and MCP, secrets and supply chain, diff review, threat model,
+abuse, LGPD, skill vetting and more), an evidence verifier for Claude Code and Codex,
+agent-file paths checked against each tool's official docs, and the full triage flow.
+
+## Credits
+
+The detection patterns are informed by the open rulesets of
+[Gitleaks](https://github.com/gitleaks/gitleaks) (provider token prefixes),
+[Semgrep](https://semgrep.dev) (insecure transport, JWT) and
+[zizmor](https://github.com/woodruffw/zizmor) (GitHub Actions). hullcheck reimplements
+the high-signal ideas natively, so it stays dependency-free.
 
 ## Contributing
 
-A rule is one function in [`src/rules.rs`](src/rules.rs) that takes a file and returns
-findings, each with a quoted line. Add it to the `PER_FILE` list, add a fixture under
-`tests/fixtures/`, and a test in [`tests/scan.rs`](tests/scan.rs). `cargo test`, `cargo fmt`
-and `cargo clippy -- -D warnings` must pass. Keep rules conservative: when in doubt, use the
-Validate or Unverified lane rather than Fix Now.
-
-## FAQ
-
-**Does it send my code anywhere?** No. It reads files on disk and makes no network calls.
-
-**Does it change my repo?** No. It is read-only and writes nothing.
-
-**Does a clean run mean my app is secure?** No. hullcheck covers a set of common, high-cost
-mistakes. A clean run means those specific checks found nothing, not that there is nothing to
-find.
+See [CONTRIBUTING.md](CONTRIBUTING.md). A rule is one function in
+[`src/rules.rs`](src/rules.rs) with a fixture and a test; no new dependencies. Security
+reports: [SECURITY.md](SECURITY.md).
 
 ## License
 
@@ -274,28 +244,28 @@ MIT. Use it only on code you own or are authorized to review.
 <details>
 <summary><strong>Português</strong></summary>
 
-`hullcheck` lê o repositório do SaaS que você construiu com um agente de código e aponta os
-poucos erros que de fato vazam dado ou dinheiro: tabela do Supabase sem row level security,
-`service_role` no bundle do navegador, webhook do Stripe sem conferir a assinatura, action
-presa a uma tag móvel. Cita a linha exata atrás de cada um e não chama de vulnerabilidade
-nada que não possa te mostrar.
+`hullcheck` lê o repositório do SaaS que você construiu com um agente de código e aponta
+os poucos erros que de fato vazam dado ou dinheiro: tabela que qualquer um lê,
+`service_role` no bundle do navegador, webhook do Stripe sem conferir a assinatura,
+verificação de TLS desligada, action que roda código de terceiro. Cita a linha exata
+atrás de cada achado e não chama de vulnerabilidade nada que não possa te mostrar.
 
-Só lê arquivos. Não faz chamada de rede, não escreve nada, não roda código do seu repo e
-nunca diz que seu app está seguro.
+Só lê arquivos: **sem rede, sem escrever nada, sem rodar código do seu repo, e nunca diz
+que seu app está seguro.** Valor de `.env` é redigido, nunca impresso.
 
-**Rodar:** `cargo install --git https://github.com/glferreira-devsecops/hullcheck`, depois
-`hullcheck` dentro do projeto. Sai com código `1` quando há achado em *Fix Now*, então serve
-de gate no CI; `--json` para outra ferramenta e `--exit-zero` para não derrubar o build.
+**Rodar:** `cargo install hullcheck` (ou o `curl | sh` acima), depois `hullcheck` no
+projeto. Sai com código `1` quando há achado em *Fix Now*, então serve de gate no CI.
 
 **Faixas:** *Fix Now* (seguro corrigir agora), *Monitor* (depende de config fora do repo),
-*Validate Manually* (toca login, dado, cobrança, upload, admin ou IA, então um humano
-confirma) e *Unverified* (o que não deu para confirmar fica fora de Fix Now).
+*Validate Manually* (toca login, dado, cobrança, upload, admin ou IA, humano confirma),
+*Unverified* (o que não deu pra confirmar fica fora de Fix Now).
 
-**Ignorar:** um `.hullcheckignore` na raiz (padrões estilo gitignore) ou um comentário
+**Ignorar:** `.hullcheckignore` na raiz (padrões estilo gitignore) ou um comentário
 `// hullcheck:ignore` na linha (ou `// hullcheck:ignore-next-line` na linha de cima).
 
-Zero dependências, zero rede, tudo em Rust std. Dá para auditar o tool inteiro de uma vez. O
-kit completo (13 skills, verificador de evidência, fluxo de triagem) está no
+São 18 checagens (Supabase/Firebase, segredos e tokens de provedor, Stripe, TLS, JWT,
+CORS, XSS, SQL, Actions, MCP e qual arquivo cada agente lê). Zero dependência, tudo em
+Rust std. O kit completo (13 skills, verificador de evidência, triagem) está no
 [RET Promptbook](https://www.rettecnologia.org/promptbook).
 
 </details>

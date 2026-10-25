@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 452" role="img" aria-label="hullcheck terminal output">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 556" role="img" aria-label="hullcheck terminal output">
   <title>hullcheck scan output</title>
   <defs>
     <style>
-      .t { font-family: 'SF Mono','JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace; font-size: 14px; }
+      .t { font-family: 'SF Mono','JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace; font-size: 13.5px; }
       .dim { fill: #7E93A8; }
       .txt { fill: #C9D7E6; }
       .cy { fill: #22D3EE; }
@@ -10,34 +10,42 @@
       .pa { fill: #8FB3D9; }
       .gr { fill: #4ADE80; }
     </style>
+    <linearGradient id="d-top" x1="0" y1="1" x2="0" y2="35" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16293E"/>
+      <stop offset="1" stop-color="#11243A"/>
+    </linearGradient>
   </defs>
-  <rect x="1" y="1" width="758" height="450" rx="12" fill="#0B1B2B" stroke="#1C3350"/>
-  <rect x="1" y="1" width="758" height="34" rx="12" fill="#12263B"/>
-  <rect x="1" y="22" width="758" height="13" fill="#12263B"/>
-  <circle cx="22" cy="18" r="5" fill="#FF5F56"/>
-  <circle cx="40" cy="18" r="5" fill="#FFBD2E"/>
-  <circle cx="58" cy="18" r="5" fill="#27C93F"/>
-  <text x="380" y="22" text-anchor="middle" class="t dim">hullcheck</text>
+  <rect x="1" y="1" width="778" height="554" rx="13" fill="#0B1B2B" stroke="#1C3350"/>
+  <rect x="1" y="1" width="778" height="35" rx="13" fill="url(#d-top)"/>
+  <rect x="1" y="23" width="778" height="13" fill="#11243A"/>
+  <circle cx="23" cy="18" r="5.5" fill="#FF5F56"/>
+  <circle cx="42" cy="18" r="5.5" fill="#FFBD2E"/>
+  <circle cx="61" cy="18" r="5.5" fill="#27C93F"/>
+  <text x="390" y="22" text-anchor="middle" class="t dim">hullcheck</text>
   <g class="t" xml:space="preserve">
-    <text x="20" y="62"><tspan class="gr">$</tspan><tspan class="txt"> hullcheck</tspan></text>
-    <text x="20" y="84" class="txt">hullcheck 0.1.0  ·  412 files scanned  ·  .</text>
-    <text x="20" y="104" class="dim">read-only, no network. evidence is quoted by file and line.</text>
-    <text x="20" y="134"><tspan class="am">Fix Now 2</tspan><tspan class="dim">   Monitor 1   Validate Manually 2   Unverified 0</tspan></text>
+    <text x="22" y="64"><tspan class="gr">$</tspan><tspan class="txt"> hullcheck</tspan></text>
+    <text x="22" y="86" class="txt">hullcheck 0.1.0  ·  418 files scanned  ·  .</text>
+    <text x="22" y="105" class="dim">read-only, no network. evidence is quoted by file and line.</text>
+    <text x="22" y="134"><tspan class="am">Fix Now 3</tspan><tspan class="dim">   Monitor 1   Validate Manually 2   Unverified 0</tspan></text>
 
-    <text x="20" y="168" class="cy">## Fix Now</text>
-    <text x="20" y="190"><tspan class="pa">app/page.tsx:2</tspan><tspan class="txt">  Secret in public env var NEXT_PUBLIC_..._SERVICE_ROLE_KEY</tspan></text>
-    <text x="36" y="210" class="dim">const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;</text>
-    <text x="36" y="230"><tspan class="cy">fix:</tspan><tspan class="txt"> drop the public prefix, read it only on the server, and rotate it.</tspan></text>
+    <text x="22" y="166" class="cy">## Fix Now</text>
+    <text x="22" y="187"><tspan class="pa">supabase/migrations/001.sql:7</tspan><tspan class="txt">  RLS policy matches every row</tspan></text>
+    <text x="38" y="206" class="dim">create policy "read" on profiles for select using (true);</text>
+    <text x="22" y="231"><tspan class="pa">firestore.rules:5</tspan><tspan class="txt">  Firebase rule grants access to everyone (if true)</tspan></text>
+    <text x="38" y="250" class="dim">allow read, write: if true;</text>
+    <text x="22" y="275"><tspan class="pa">app/config.ts:3</tspan><tspan class="txt">  GitHub personal access token hardcoded in source</tspan></text>
+    <text x="38" y="294" class="dim">const token = "ghp_••••••••••••••••••••••••••••••••";</text>
 
-    <text x="20" y="262"><tspan class="pa">supabase/migrations/001_init.sql:7</tspan><tspan class="txt">  RLS policy matches every row</tspan></text>
-    <text x="36" y="282" class="dim">create policy "read" on public.profiles for select using (true);</text>
-    <text x="36" y="302"><tspan class="cy">fix:</tspan><tspan class="txt"> replace true with a predicate like auth.uid() = user_id.</tspan></text>
+    <text x="22" y="326" class="cy">## Validate Manually</text>
+    <text x="22" y="347"><tspan class="pa">app/api/webhook/route.ts:4</tspan><tspan class="txt">  Stripe webhook with no signature check</tspan></text>
+    <text x="38" y="366" class="dim">const event = await req.json();</text>
+    <text x="22" y="391"><tspan class="pa">app/http.ts:2</tspan><tspan class="txt">  TLS certificate verification disabled</tspan></text>
+    <text x="38" y="410" class="dim">new https.Agent({ rejectUnauthorized: false });</text>
 
-    <text x="20" y="336" class="cy">## Validate Manually</text>
-    <text x="20" y="358"><tspan class="pa">app/api/webhook/route.ts:4</tspan><tspan class="txt">  Stripe webhook, no signature check</tspan></text>
-    <text x="36" y="378" class="dim">const event = await req.json();</text>
-    <text x="36" y="398"><tspan class="cy">fix:</tspan><tspan class="txt"> verify with stripe.webhooks.constructEvent(body, sig, secret).</tspan></text>
+    <text x="22" y="442" class="cy">## Monitor</text>
+    <text x="22" y="463"><tspan class="pa">app/cors.ts:1</tspan><tspan class="txt">  CORS allows any origin (wildcard header)</tspan></text>
+    <text x="38" y="482" class="dim">headers = { "Access-Control-Allow-Origin": "*" };</text>
 
-    <text x="20" y="432" class="dim">Full review kit: rettecnologia.org/promptbook</text>
+    <text x="22" y="516"><tspan class="dim">exit 1  ·  hand the findings to your agent  ·  </tspan><tspan class="cy">rettecnologia.org/promptbook</tspan></text>
   </g>
 </svg>

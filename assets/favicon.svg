@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="hullcheck">
+  <title>hullcheck</title>
+  <defs>
+    <linearGradient id="hc-tile" x1="6" y1="2" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#17395B"/>
+      <stop offset="1" stop-color="#0A1826"/>
+    </linearGradient>
+    <linearGradient id="hc-top" x1="32" y1="2" x2="32" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <!-- modern product tile with a soft top highlight (2026 soft-3D) -->
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#hc-tile)"/>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#hc-top)"/>
+  <!-- the hull check: a bold checkmark that is also a hull/bow wave -->
+  <path d="M16 33 L28 45 L50 20" fill="none" stroke="#22D3EE" stroke-width="7"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- wake tick under the hull -->
+  <path d="M20 50 L32 50" stroke="#22D3EE" stroke-width="5" stroke-linecap="round" opacity="0.45"/>
+</svg>

@@ -1,0 +1,7 @@
+#compdef hullcheck
+_arguments \
+  '--json[emit JSON instead of the human report]' \
+  '--exit-zero[always exit 0, even with Fix Now findings]' \
+  '(-h --help)'{-h,--help}'[print help]' \
+  '(-V --version)'{-V,--version}'[print version]' \
+  '*:path:_files -/'
