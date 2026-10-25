@@ -13,7 +13,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/dependencies-0-22D3EE?style=flat-square" alt="zero dependencies">
   <img src="https://img.shields.io/badge/network-none-22D3EE?style=flat-square" alt="no network">
-  <img src="https://img.shields.io/badge/rules-18-22D3EE?style=flat-square" alt="18 rules">
+  <img src="https://img.shields.io/badge/rules-20-22D3EE?style=flat-square" alt="20 rules">
   <a href="https://crates.io/crates/hullcheck"><img src="https://img.shields.io/crates/v/hullcheck?style=flat-square&color=0B1B2B" alt="crates.io"></a>
   <a href="https://crates.io/crates/hullcheck"><img src="https://img.shields.io/crates/d/hullcheck?style=flat-square&color=0B1B2B&label=installs" alt="downloads"></a>
   <a href="https://docs.rs/hullcheck"><img src="https://img.shields.io/docsrs/hullcheck?style=flat-square" alt="docs.rs"></a>
@@ -55,7 +55,7 @@ lane, so it also works as a CI gate.
 
 ## What it catches
 
-Eighteen checks, each one a concrete, high-cost mistake, grouped by where it bites.
+Twenty checks, each one a concrete, high-cost mistake, grouped by where it bites.
 Every finding lands in a lane: **Fix Now** (safe to correct today), **Monitor**
 (depends on config outside the repo), **Validate Manually** (touches login, data,
 money, uploads, admin or AI, so a human confirms), or **Unverified** (the line could
@@ -85,6 +85,10 @@ not be confirmed, so it never enters Fix Now).
 
 **Server config**
 - `debug-enabled` — Flask/Django debug mode on
+
+**Privacy (LGPD / GDPR)**
+- `pii-sensitive-data` — a migration column holding sensitive personal data (CPF, national id, date of birth, health, biometrics)
+- `tracking-consent` — third-party analytics or marketing tracking loaded without a visible consent gate
 
 **CI & supply chain**
 - `gha-pin` — a GitHub Action pinned to a movable tag instead of a commit SHA

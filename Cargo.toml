@@ -1,6 +1,6 @@
 [package]
 name = "hullcheck"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 rust-version = "1.74"
 description = "Read-only security review for the SaaS you built with an AI agent. Zero dependencies, zero network. Evidence by file and line, no false certainty."

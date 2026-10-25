@@ -34,6 +34,8 @@ pub const PER_FILE: &[PerFileRule] = &[
     dangerous_html,
     prisma_raw_unsafe,
     debug_production,
+    pii_sensitive_data,
+    tracking_consent,
 ];
 
 /// Rules that need the whole repository at once (cross-file reasoning).
@@ -891,6 +893,112 @@ fn debug_production(f: &TextFile) -> Vec<Finding> {
                 line,
                 "Debug mode leaks stack traces and settings, and Flask's debugger exposes a remote code-execution console.",
                 "Load the flag from an env var that defaults to False, and keep debug off in production.",
+            ));
+        }
+    }
+    out
+}
+
+// ---- rule: sensitive personal data (LGPD / GDPR) ---------------------------
+
+/// Column names for sensitive or special-category personal data.
+const SENSITIVE_PII: &[&str] = &[
+    "cpf",
+    "cnpj",
+    "rg",
+    "ssn",
+    "passport",
+    "national_id",
+    "tax_id",
+    "birthdate",
+    "date_of_birth",
+    "dob",
+    "biometric",
+    "biometrics",
+    "health",
+    "religion",
+    "race",
+    "ethnicity",
+    "sexual_orientation",
+];
+
+/// A migration column holding sensitive or special-category personal data raises
+/// the compliance bar: under Brazil's LGPD (Art. 11) and the GDPR (Art. 9) it
+/// needs a lawful basis, encryption, tight access and a retention limit.
+fn pii_sensitive_data(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "pii-sensitive-data";
+    let is_sql = f.ext() == "sql" || f.rel.contains("/migrations/") || f.rel.contains("migration");
+    if !is_sql {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let lowered = line.trim_start().to_ascii_lowercase();
+        let column = lowered.trim_start_matches(['"', '`', '[']);
+        let name: String = column
+            .chars()
+            .take_while(|c| c.is_ascii_alphanumeric() || *c == '_')
+            .collect();
+        if !SENSITIVE_PII.contains(&name.as_str()) {
+            continue;
+        }
+        // Require a column type after the name so a word in prose does not match.
+        let rest = &column[name.len()..];
+        let typed = has(rest, "text")
+            || has(rest, "varchar")
+            || has(rest, "char")
+            || has(rest, "date")
+            || has(rest, "timestamp")
+            || has(rest, "jsonb")
+            || has(rest, "bytea")
+            || has(rest, "int")
+            || has(rest, "numeric")
+            || has(rest, "bool");
+        if typed {
+            out.push(Finding::new(
+                RULE,
+                Lane::Validate,
+                format!("Sensitive personal data column `{name}`"),
+                &f.rel,
+                i + 1,
+                line,
+                "Sensitive or special-category personal data (LGPD Art. 11 / GDPR Art. 9) needs a lawful basis, encryption at rest, tight access and a retention limit.",
+                "Confirm the lawful basis, encrypt it at rest, restrict access, keep it only as long as needed, and record it in your data map; avoid storing it if you can.",
+            ));
+        }
+    }
+    out
+}
+
+// ---- rule: tracking without consent (LGPD / GDPR) --------------------------
+
+/// Non-essential analytics or marketing tracking usually needs the user's
+/// consent before it loads, under the LGPD and the GDPR.
+fn tracking_consent(f: &TextFile) -> Vec<Finding> {
+    const RULE: &str = "tracking-consent";
+    if !(is_web_code(f.ext()) || f.ext() == "html") {
+        return Vec::new();
+    }
+    let mut out = Vec::new();
+    for (i, line) in f.lines.iter().enumerate() {
+        let hit = has(line, "googletagmanager.com")
+            || has(line, "google-analytics.com")
+            || has(line, "connect.facebook.net")
+            || has(line, "static.hotjar.com")
+            || has(line, "clarity.ms")
+            || has(line, "cdn.segment.com")
+            || line.contains("fbq(")
+            || line.contains("gtag(");
+        if hit {
+            out.push(Finding::new(
+                RULE,
+                Lane::Monitor,
+                "Third-party tracking loaded without a visible consent gate",
+                &f.rel,
+                i + 1,
+                line,
+                "Non-essential analytics or marketing tracking usually needs the user's consent before it loads (LGPD and GDPR).",
+                "Load the tracker only after consent through a consent manager, and record the lawful basis in your privacy policy.",
             ));
         }
     }

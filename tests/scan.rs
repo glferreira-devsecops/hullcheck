@@ -44,6 +44,8 @@ fn vuln_fixture_flags_every_rule() {
         "dangerous-html",
         "prisma-raw-unsafe",
         "debug-enabled",
+        "pii-sensitive-data",
+        "tracking-consent",
         "agent-doctor",
     ] {
         assert!(has_rule(&f, rule), "expected a {rule} finding, got: {f:?}");
@@ -247,6 +249,35 @@ fn dangerous_html_is_monitor() {
         .into_iter()
         .next()
         .expect("dangerous-html finding");
+    assert_eq!(hit.lane, Lane::Monitor);
+}
+
+#[test]
+fn pii_sensitive_data_is_validate_and_names_the_column() {
+    let f = review_fixture("vuln");
+    let hits = rule_at(&f, "pii-sensitive-data");
+    assert!(hits.iter().all(|x| x.lane == Lane::Validate));
+    assert!(
+        hits.iter().any(|x| x.quote.contains("cpf")),
+        "cpf column flagged"
+    );
+    assert!(
+        hits.iter().any(|x| x.quote.contains("date_of_birth")),
+        "date_of_birth column flagged"
+    );
+    // a plain `email`/`user_id` column must not be flagged as sensitive
+    assert!(!hits
+        .iter()
+        .any(|x| x.title.contains("`email`") || x.title.contains("`user_id`")));
+}
+
+#[test]
+fn tracking_without_consent_is_monitor() {
+    let f = review_fixture("vuln");
+    let hit = rule_at(&f, "tracking-consent")
+        .into_iter()
+        .next()
+        .expect("tracking finding");
     assert_eq!(hit.lane, Lane::Monitor);
 }
 

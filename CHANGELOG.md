@@ -6,6 +6,16 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-25
+
+### Added
+
+- Two privacy checks (LGPD / GDPR): `pii-sensitive-data` flags a migration column
+  holding sensitive personal data (CPF, national id, date of birth, health,
+  biometrics) with the compliance bar it raises; `tracking-consent` flags
+  third-party analytics or marketing tracking loaded without a consent gate.
+- Twenty rules in total.
+
 ## [0.1.0] - 2026-10-25
 
 ### Added
@@ -32,5 +42,6 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Detection patterns informed by the Gitleaks, Semgrep and zizmor rulesets,
   reimplemented natively to stay dependency-free.
 
-[Unreleased]: https://github.com/glferreira-devsecops/hullcheck/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/glferreira-devsecops/hullcheck/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/glferreira-devsecops/hullcheck/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/glferreira-devsecops/hullcheck/releases/tag/v0.1.0
