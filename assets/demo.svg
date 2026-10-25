@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 452" role="img" aria-label="shipsafe terminal output">
+  <title>shipsafe scan output</title>
+  <defs>
+    <style>
+      .t { font-family: 'SF Mono','JetBrains Mono','DejaVu Sans Mono',ui-monospace,monospace; font-size: 14px; }
+      .dim { fill: #7E93A8; }
+      .txt { fill: #C9D7E6; }
+      .cy { fill: #22D3EE; }
+      .am { fill: #F6A94B; }
+      .pa { fill: #8FB3D9; }
+      .gr { fill: #4ADE80; }
+    </style>
+  </defs>
+  <rect x="1" y="1" width="758" height="450" rx="12" fill="#0B1B2B" stroke="#1C3350"/>
+  <rect x="1" y="1" width="758" height="34" rx="12" fill="#12263B"/>
+  <rect x="1" y="22" width="758" height="13" fill="#12263B"/>
+  <circle cx="22" cy="18" r="5" fill="#FF5F56"/>
+  <circle cx="40" cy="18" r="5" fill="#FFBD2E"/>
+  <circle cx="58" cy="18" r="5" fill="#27C93F"/>
+  <text x="380" y="22" text-anchor="middle" class="t dim">shipsafe</text>
+  <g class="t" xml:space="preserve">
+    <text x="20" y="62"><tspan class="gr">$</tspan><tspan class="txt"> shipsafe</tspan></text>
+    <text x="20" y="84" class="txt">shipsafe 0.1.0  ·  412 files scanned  ·  .</text>
+    <text x="20" y="104" class="dim">read-only, no network. evidence is quoted by file and line.</text>
+    <text x="20" y="134"><tspan class="am">Fix Now 2</tspan><tspan class="dim">   Monitor 1   Validate Manually 2   Unverified 0</tspan></text>
+
+    <text x="20" y="168" class="cy">## Fix Now</text>
+    <text x="20" y="190"><tspan class="pa">app/page.tsx:2</tspan><tspan class="txt">  Secret in public env var NEXT_PUBLIC_..._SERVICE_ROLE_KEY</tspan></text>
+    <text x="36" y="210" class="dim">const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;</text>
+    <text x="36" y="230"><tspan class="cy">fix:</tspan><tspan class="txt"> drop the public prefix, read it only on the server, and rotate it.</tspan></text>
+
+    <text x="20" y="262"><tspan class="pa">supabase/migrations/001_init.sql:7</tspan><tspan class="txt">  RLS policy matches every row</tspan></text>
+    <text x="36" y="282" class="dim">create policy "read" on public.profiles for select using (true);</text>
+    <text x="36" y="302"><tspan class="cy">fix:</tspan><tspan class="txt"> replace true with a predicate like auth.uid() = user_id.</tspan></text>
+
+    <text x="20" y="336" class="cy">## Validate Manually</text>
+    <text x="20" y="358"><tspan class="pa">app/api/webhook/route.ts:4</tspan><tspan class="txt">  Stripe webhook, no signature check</tspan></text>
+    <text x="36" y="378" class="dim">const event = await req.json();</text>
+    <text x="36" y="398"><tspan class="cy">fix:</tspan><tspan class="txt"> verify with stripe.webhooks.constructEvent(body, sig, secret).</tspan></text>
+
+    <text x="20" y="432" class="dim">Full review kit: rettecnologia.org/promptbook</text>
+  </g>
+</svg>

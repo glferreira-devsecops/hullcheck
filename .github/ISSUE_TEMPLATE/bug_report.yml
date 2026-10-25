@@ -1,0 +1,34 @@
+name: Bug report
+description: A crash, a wrong result, or a false positive
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, and what you got.
+      placeholder: "shipsafe . reported X on file Y:Z, but the line does not ..."
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Smallest reproduction
+      description: The smallest file or snippet that reproduces it. For a false positive, paste the quoted line.
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `shipsafe --version`.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      placeholder: macOS 15 arm64 / Ubuntu 24.04 x86_64
+    validations:
+      required: true

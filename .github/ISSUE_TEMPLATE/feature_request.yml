@@ -1,0 +1,26 @@
+name: Rule or feature request
+description: A new check, or a change to an existing one
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The mistake to catch
+      description: The concrete, high-cost mistake this would catch, and how it leaks data or money.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: What the evidence line looks like
+      description: The source line a rule would quote, so the signal stays provable.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: lane
+    attributes:
+      label: Suggested lane
+      options: [Fix Now, Monitor, Validate Manually, Unverified]
+    validations:
+      required: true

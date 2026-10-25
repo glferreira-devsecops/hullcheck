@@ -1,3 +1,4 @@
 # Files that intentionally contain example or detector payloads.
 tests/
 README.md
+assets/demo.svg

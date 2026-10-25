@@ -17,6 +17,10 @@
   <a href="https://github.com/glferreira-devsecops/shipsafe/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glferreira-devsecops/shipsafe/ci.yml?style=flat-square&label=CI" alt="CI"></a>
 </p>
 
+<p align="center">
+  <img src="assets/demo.svg" alt="shipsafe scan output" width="720">
+</p>
+
 ---
 
 Vibe-coded a SaaS and not sure what shipped with it? `shipsafe` reads your repo and
@@ -28,18 +32,57 @@ line behind each one, and it refuses to call anything a vulnerability it cannot 
 It reads files. It makes no network calls, writes nothing, runs no code from your repo,
 and never tells you your app is secure.
 
-## Run it
+- [Install](#install)
+- [Usage](#usage)
+- [What it looks like](#what-it-looks-like)
+- [What it checks](#what-it-checks)
+- [Ignoring files and lines](#ignoring-files-and-lines)
+- [Use it in CI](#use-it-in-ci)
+- [JSON output](#json-output)
+- [Why it is different](#why-it-is-different)
+- [Skills and the full kit](#skills-and-the-full-kit)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+
+## Install
 
 ```sh
-# from source (needs Rust)
-cargo install --git https://github.com/glferreira-devsecops/shipsafe
-
-# or grab a prebuilt binary (macOS / Linux)
+# a prebuilt binary (macOS / Linux) — verifies its own checksum
 curl -fsSL https://raw.githubusercontent.com/glferreira-devsecops/shipsafe/main/install.sh | sh
 
-# then, in your project
-shipsafe
+# or from source, with Rust
+cargo install --git https://github.com/glferreira-devsecops/shipsafe
+
+# or build it yourself
+git clone https://github.com/glferreira-devsecops/shipsafe && cd shipsafe
+cargo build --release   # binary at target/release/shipsafe
 ```
+
+The installer drops the binary in `~/.local/bin` by default (override with `INSTALL_DIR`).
+Prebuilt binaries ship for `x86_64-linux`, `aarch64-apple-darwin` and `x86_64-apple-darwin`;
+any other platform builds from source.
+
+## Usage
+
+```sh
+shipsafe [PATH] [OPTIONS]
+```
+
+| | |
+| --- | --- |
+| `PATH` | repository to scan (default: current directory) |
+| `--json` | emit JSON instead of the human report |
+| `--exit-zero` | always exit 0, even with Fix Now findings |
+| `-h`, `--help` | print help |
+| `-V`, `--version` | print version |
+
+Exit codes:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | no Fix Now findings (or `--exit-zero`) |
+| `1` | at least one Fix Now finding |
+| `2` | bad usage (unknown flag, path is not a directory) |
 
 ## What it looks like
 
@@ -69,25 +112,13 @@ app/api/webhook/route.ts:4  Stripe webhook handler with no signature verificatio
     fix: Verify the event with stripe.webhooks.constructEvent(body, sig, secret) before acting on it.
 ```
 
-Exit code is `1` when there is a Fix Now finding, so it gates a CI job. `--json` emits the
-same findings for a bot; `--exit-zero` never fails the build.
+Each finding ends with a ready prompt you can hand to your coding agent:
 
-## Why it is different
-
-The scanners in this space are famous for two things: a wall of findings, and findings
-that are wrong. `shipsafe` is built against both.
-
-- **Evidence or it does not exist.** Every finding carries `file:line` and the quoted
-  source line. A signal that cannot be confirmed from the files present lands in a separate
-  **Unverified** lane, never in Fix Now.
-- **Lanes, not a severity lottery.** *Fix Now* is safe to correct today. *Monitor* depends
-  on config outside the repo. *Validate Manually* touches login, data, billing, uploads,
-  admin or AI tools, so a human confirms before anyone calls it a vulnerability.
-- **Zero dependencies, zero network.** The whole tool is std-only Rust. No package tree can
-  ship a surprise, nothing phones home, and you can audit all of it in one sitting.
-- **It reads the agent, not just the app.** The *agent instruction doctor* tells you which
-  instruction file each coding agent actually loads, so the rules you wrote are not silently
-  ignored.
+```
+For each shipsafe finding, open the quoted file:line, confirm the issue is real,
+then propose the smallest safe fix and a test that fails before it. Do not change
+anything you cannot confirm from the file.
+```
 
 ## What it checks
 
@@ -103,35 +134,136 @@ that are wrong. `shipsafe` is built against both.
 | `gha-pr-target` | a workflow using the `pull_request_target` trigger | Validate |
 | `agent-doctor` | `CLAUDE.md` shadowing `AGENTS.md`, a `.md` in `.cursor/rules`, an ignored `.antigravity.md`, a stray `.cursorrules` | Monitor / Validate |
 
+Lanes: **Fix Now** is safe to correct today. **Monitor** depends on config outside the repo.
+**Validate Manually** touches login, data, billing, uploads, admin or AI tools, so a human
+confirms before anyone calls it a vulnerability. **Unverified** is a signal whose line could
+not be confirmed; it never enters Fix Now.
+
 These are a sharp set of common, high-cost mistakes, not a full audit.
 
-## Hand the findings to your agent
+## Ignoring files and lines
 
+shipsafe skips `node_modules`, `.git`, build output and caches on its own. For the rest, it
+reads a `.shipsafeignore` at the repository root, one gitignore-style pattern per line:
+
+```gitignore
+# vendored or generated code
+vendor/
+public/build/**
+*.min.js
+
+# a file you reviewed and accept
+supabase/migrations/legacy.sql
 ```
-For each shipsafe finding, open the quoted file:line, confirm the issue is real,
-then propose the smallest safe fix and a test that fails before it. Do not change
-anything you cannot confirm from the file.
+
+Patterns support `*` (within a path segment), `**` (across segments), `?`, and a trailing `/`
+for a directory. To silence a single line, annotate the source instead:
+
+```ts
+const legacyKey = process.env.OLD_KEY; // shipsafe:ignore
+
+// shipsafe:ignore-next-line
+const other = buildClient(url, key);
 ```
 
-The repo also ships two portable **skills** (`skills/`): tenant isolation and billing
-webhooks. Copy them to `.claude/skills/`, `.github/skills/` or `.agents/skills/`, or add
-the whole repo with `npx skills add glferreira-devsecops/shipsafe`.
+## Use it in CI
 
-## Not a silver bullet
+shipsafe exits `1` on a Fix Now finding, so it gates a job with no extra config:
 
-`shipsafe` is the fast first pass: a few minutes, no setup, no account. It does not replace
-deeper tools. For full SAST, dependency CVEs and secret history, run
-[Semgrep](https://semgrep.dev), [osv-scanner](https://github.com/google/osv-scanner) and
-[gitleaks](https://github.com/gitleaks/gitleaks) alongside it. And when a finding touches
-money, access or customer data, a human validates before it is called a vulnerability.
+```yaml
+# .github/workflows/shipsafe.yml
+name: shipsafe
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - run: cargo install --git https://github.com/glferreira-devsecops/shipsafe
+      - run: shipsafe .
+```
 
-## The full review kit
+Use `shipsafe --json .` to post findings to another tool, or `shipsafe --exit-zero .` to
+report without ever failing the build.
+
+## JSON output
+
+`--json` prints a stable document: a summary count per lane and one object per finding.
+
+```json
+{
+  "tool": "shipsafe",
+  "version": "0.1.0",
+  "scannedFiles": 412,
+  "summary": { "fixNow": 2, "monitor": 1, "validate": 2, "unverified": 0 },
+  "findings": [
+    {
+      "rule": "client-secret",
+      "lane": "fix-now",
+      "title": "Secret exposed through public env var `NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY`",
+      "file": "app/page.tsx",
+      "line": 2,
+      "quote": "const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;",
+      "impact": "Any variable with a public prefix is inlined into the client bundle...",
+      "fix": "Drop the public prefix and read this value only on the server; rotate it..."
+    }
+  ]
+}
+```
+
+## Why it is different
+
+The scanners in this space are known for two things: a wall of findings, and findings that
+are wrong. `shipsafe` is built against both.
+
+- **Evidence or it does not exist.** Every finding carries `file:line` and the quoted source
+  line. A signal that cannot be confirmed from the files present lands in a separate
+  **Unverified** lane, never in Fix Now.
+- **Lanes, not a severity lottery.** You always know whether something is safe to fix now or
+  needs a human first.
+- **Zero dependencies, zero network.** The whole tool is std-only Rust (~1.5k lines). No
+  package tree can ship a surprise, nothing phones home, and you can audit all of it in one
+  sitting. It scans files in parallel and finishes in well under a second on a typical repo.
+- **It reads the agent, not just the app.** The *agent instruction doctor* tells you which
+  instruction file each coding agent actually loads, so the rules you wrote are not silently
+  ignored.
+
+It is the fast first pass, not a replacement for deeper tools. For full SAST, dependency CVEs
+and secret history, run [Semgrep](https://semgrep.dev),
+[osv-scanner](https://github.com/google/osv-scanner) and
+[gitleaks](https://github.com/gitleaks/gitleaks) alongside it.
+
+## Skills and the full kit
+
+The repo ships two portable **skills** (`skills/`): tenant isolation and billing webhooks.
+Copy them to `.claude/skills/`, `.github/skills/` or `.agents/skills/`, or add the repo with
+`npx skills add glferreira-devsecops/shipsafe`.
 
 The [RET Promptbook](https://www.rettecnologia.org/promptbook) takes this further: 13 review
-skills (auth, uploads, AI and MCP, secrets and supply chain, diff review, threat model,
-abuse and rate limits, LGPD, skill vetting and more), an evidence verifier for Claude Code
-and Codex, agent-file paths checked against each tool's official docs, and the full triage
-flow from signal to decision.
+skills (auth, uploads, AI and MCP, secrets and supply chain, diff review, threat model, abuse
+and rate limits, LGPD, skill vetting and more), an evidence verifier for Claude Code and
+Codex, agent-file paths checked against each tool's official docs, and the full triage flow
+from signal to decision.
+
+## Contributing
+
+A rule is one function in [`src/rules.rs`](src/rules.rs) that takes a file and returns
+findings, each with a quoted line. Add it to the `PER_FILE` list, add a fixture under
+`tests/fixtures/`, and a test in [`tests/scan.rs`](tests/scan.rs). `cargo test`, `cargo fmt`
+and `cargo clippy -- -D warnings` must pass. Keep rules conservative: when in doubt, use the
+Validate or Unverified lane rather than Fix Now.
+
+## FAQ
+
+**Does it send my code anywhere?** No. It reads files on disk and makes no network calls.
+
+**Does it change my repo?** No. It is read-only and writes nothing.
+
+**Does a clean run mean my app is secure?** No. shipsafe covers a set of common, high-cost
+mistakes. A clean run means those specific checks found nothing, not that there is nothing to
+find.
 
 ## License
 
@@ -152,12 +284,18 @@ Só lê arquivos. Não faz chamada de rede, não escreve nada, não roda código
 nunca diz que seu app está seguro.
 
 **Rodar:** `cargo install --git https://github.com/glferreira-devsecops/shipsafe`, depois
-`shipsafe` dentro do projeto. Saída em faixas: *Fix Now*, *Monitor*, *Validate Manually* e
-*Unverified* (o que não deu pra confirmar fica fora de Fix Now).
+`shipsafe` dentro do projeto. Sai com código `1` quando há achado em *Fix Now*, então serve
+de gate no CI; `--json` para outra ferramenta e `--exit-zero` para não derrubar o build.
 
-Zero dependências, zero rede, tudo em Rust std. Dá pra auditar o tool inteiro de uma vez.
+**Faixas:** *Fix Now* (seguro corrigir agora), *Monitor* (depende de config fora do repo),
+*Validate Manually* (toca login, dado, cobrança, upload, admin ou IA, então um humano
+confirma) e *Unverified* (o que não deu para confirmar fica fora de Fix Now).
 
-O kit completo (13 skills, verificador de evidência, fluxo de triagem) está no
+**Ignorar:** um `.shipsafeignore` na raiz (padrões estilo gitignore) ou um comentário
+`// shipsafe:ignore` na linha (ou `// shipsafe:ignore-next-line` na linha de cima).
+
+Zero dependências, zero rede, tudo em Rust std. Dá para auditar o tool inteiro de uma vez. O
+kit completo (13 skills, verificador de evidência, fluxo de triagem) está no
 [RET Promptbook](https://www.rettecnologia.org/promptbook).
 
 </details>
