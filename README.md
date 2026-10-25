@@ -15,6 +15,8 @@
   <img src="https://img.shields.io/badge/network-none-22D3EE?style=flat-square" alt="no network">
   <img src="https://img.shields.io/badge/rules-18-22D3EE?style=flat-square" alt="18 rules">
   <a href="https://crates.io/crates/hullcheck"><img src="https://img.shields.io/crates/v/hullcheck?style=flat-square&color=0B1B2B" alt="crates.io"></a>
+  <a href="https://crates.io/crates/hullcheck"><img src="https://img.shields.io/crates/d/hullcheck?style=flat-square&color=0B1B2B&label=installs" alt="downloads"></a>
+  <a href="https://docs.rs/hullcheck"><img src="https://img.shields.io/docsrs/hullcheck?style=flat-square" alt="docs.rs"></a>
   <img src="https://img.shields.io/badge/license-MIT-0B1B2B?style=flat-square" alt="MIT">
   <a href="https://github.com/glferreira-devsecops/hullcheck/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/glferreira-devsecops/hullcheck/ci.yml?style=flat-square&label=CI" alt="CI"></a>
 </p>
