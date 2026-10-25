@@ -12,9 +12,10 @@ INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
 os="$(uname -s)"
 arch="$(uname -m)"
 case "$os-$arch" in
-  Linux-x86_64)   target="x86_64-unknown-linux-gnu" ;;
-  Darwin-arm64)   target="aarch64-apple-darwin" ;;
-  Darwin-x86_64)  target="x86_64-apple-darwin" ;;
+  Linux-x86_64)          target="x86_64-unknown-linux-musl" ;;
+  Linux-aarch64|Linux-arm64) target="aarch64-unknown-linux-musl" ;;
+  Darwin-arm64)          target="aarch64-apple-darwin" ;;
+  Darwin-x86_64)         target="x86_64-apple-darwin" ;;
   *)
     echo "hullcheck: no prebuilt binary for $os-$arch." >&2
     echo "Build from source instead: cargo install --git https://github.com/$REPO" >&2
